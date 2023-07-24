@@ -5,6 +5,7 @@ on:
       - master
 
 env:
+  IOTINGA_PRIVATE_ZIP_PASSWORD: ${{ secrets.IOTINGA_PRIVATE_ZIP_PASSWORD }}
   IOTINGA_RUN_ID: github-actions-${{ github.run_number }}
   IOTINGA_CLI_URL: https://iotinga-deliverables.s3.eu-west-1.amazonaws.com/repo/python/iotinga_cli/iotinga_cli-production-py3-none-any.whl
 

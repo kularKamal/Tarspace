@@ -38,3 +38,5 @@ dist-ssr
 # MacOS
 .DS_Store
 
+private/
+
