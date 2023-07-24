@@ -39,5 +39,13 @@ jobs:
     env:
       IOTINGA_VERSION: ${{ needs.start-build.outputs.version }}
     steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: "v${{ env.IOTINGA_VERSION }}"
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install iotinga cli
+        run: python3 -m pip install --user "${{ env.IOTINGA_CLI_URL }}"
       - name: Build iotinga delivery web app
         run: python3 -m iotinga ci build iotinga-delivery-web-app
