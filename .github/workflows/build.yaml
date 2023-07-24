@@ -37,7 +37,7 @@ jobs:
     needs: prepare
     runs-on: linux-pve
     env:
-      IOTINGA_VERSION: ${{ needs.start-build.outputs.version }}
+      IOTINGA_VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - uses: actions/checkout@v3
         with:
