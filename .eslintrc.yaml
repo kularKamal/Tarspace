@@ -1,0 +1,57 @@
+root: true
+parser: "@typescript-eslint/parser"
+plugins:
+  - "@typescript-eslint"
+  - "prettier"
+  - "eslint-plugin-import"
+  - "react"
+extends:
+  - plugin:prettier/recommended
+  - eslint:recommended
+  - plugin:@typescript-eslint/eslint-recommended
+  - plugin:@typescript-eslint/recommended
+  - plugin:react-hooks/recommended
+  - prettier
+  - "plugin:react/recommended"
+  - "react-app"
+  - "react-app/jest"
+ignorePatterns:
+  - "*.js"
+  - "*.d.ts"
+rules:
+  prefer-const: warn
+  prettier/prettier: warn
+  semi: "off"
+  no-empty-function: "off"
+  curly: "warn"
+  require-await: "off"
+  import/no-default-export: "off"
+  no-console: "warn"
+  eqeqeq: ["warn", "always", { "null": "ignore" }]
+  no-empty: "off"
+
+  react/prop-types: "off"
+  react/display-name: "off"
+  react/jsx-no-literals": "off"
+  react/react-in-jsx-scope: "off"
+
+  # this rule conflicts with TypeScript namespaces.
+  # TypeScript already checks for not defined variables to this is redundant
+  no-undef: "off"
+
+  # TypeScript options
+  "@typescript-eslint/ban-ts-comment": "warn"
+  "@typescript-eslint/ban-types": "warn"
+  "@typescript-eslint/explicit-function-return-type": "off"
+  "@typescript-eslint/explicit-module-boundary-types": "off"
+  "@typescript-eslint/member-delimiter-style": "off"
+  "@typescript-eslint/no-empty-function": "off"
+  "@typescript-eslint/no-empty-interface": "off"
+  "@typescript-eslint/no-explicit-any": "warn"
+  "@typescript-eslint/no-non-null-assertion": "warn"
+  "@typescript-eslint/no-use-before-define": "off"
+  "@typescript-eslint/no-inferrable-types": "off"
+  "@typescript-eslint/no-unused-vars": "off"
+settings:
+  react:
+    version: detect
