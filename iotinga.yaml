@@ -1,0 +1,29 @@
+version: 1
+project: CI-WEB-INTERFACE@IOTINGA
+remote_url: https://github.com/iotinga/iotinga-delivery-web-app
+
+prepare:
+  - version
+  - shell:
+      command: npm version {{ env.run.version }}
+      cwd: "."
+  - shell: git commit -a -m '[CI] bump version to {{ env.run.version }}'
+  - shell: git push
+    continue-on-error: true
+
+artifacts:
+  - name: iotinga-delivery-web-app
+    cwd: "."
+    build:
+      - shell: npm ci && npm test && npm run build
+      - copy:
+          source: file://build/**/*
+          destination: s3://space-tinga-io/
+
+deliverables:
+  - name: iotinga-delivery-web-app
+    artifacts:
+      - iotinga-delivery-web-app
+    publish:
+      - move-public:
+          static: true
