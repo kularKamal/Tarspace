@@ -3,9 +3,8 @@ project: CI-WEB-INTERFACE@IOTINGA
 remote_url: https://github.com/iotinga/iotinga-delivery-web-app
 
 prepare:
-  - version
   - shell: npm version {{ env.run.version }}
-  - shell: git commit -a -m '[CI] bump version to {{ env.run.version }}'
+  - shell: git commit -a -m '[CI] bump version to {{ env.run.version }}' --allow-empty
   - shell: git push
     continue-on-error: true
 
