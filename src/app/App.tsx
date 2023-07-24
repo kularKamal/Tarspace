@@ -18,7 +18,7 @@ const PageCard = (props: { route: string }) => (
     <Flex>
       <div>
         <Title>
-          Page <InlineCode text={props.route} />
+          PageTest <InlineCode text={props.route} />
         </Title>
       </div>
     </Flex>

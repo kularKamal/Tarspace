@@ -1,0 +1,42 @@
+name: Iotinga Delivery Web App CI/CD
+on:
+  push:
+    branches:
+      - master
+
+env:
+  IOTINGA_RUN_ID: github-actions-${{ github.run_number }}
+  IOTINGA_CLI_URL: https://iotinga-deliverables.s3.eu-west-1.amazonaws.com/repo/python/iotinga_cli/iotinga_cli-production-py3-none-any.whl
+
+jobs:
+  prepare:
+    if: "!startsWith(github.event.head_commit.message, 'chore:')"
+    runs-on: linux-pve
+    outputs:
+      version: ${{ env.IOTINGA_VERSION }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+      - name: Install Iotinga CLI
+        run: python3 -m pip install --user "${{ env.IOTINGA_CLI_URL }}"
+      - name: Prepare for build
+        env:
+          IOTINGA_VERBOSE: ${{ runner.debug }}
+        run: python3 -m iotinga ci prepare
+
+  build:
+    name: Build webapp
+    needs: prepare
+    runs-on: linux-pve
+    env:
+      IOTINGA_VERSION: ${{ needs.start-build.outputs.version }}
+    steps:
+      - name: Build iotinga delivery web app
+        run: python3 -m iotinga ci build iotinga-delivery-web-app
