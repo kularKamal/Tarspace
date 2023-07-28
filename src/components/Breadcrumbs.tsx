@@ -1,24 +1,39 @@
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 
 type BreadcrumbsElement = {
   name: string
   route: string
 }
 
-const Chevron = () => (
-  <svg
-    className="w-3 h-3 text-gray-400 mx-1"
-    aria-hidden="true"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 6 10"
-  >
-    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4" />
-  </svg>
-)
+interface CrumbNames {
+  [key: string]: string | null
+}
 
-const Breadcrumbs = (props: { crumbs: BreadcrumbsElement[]; className?: string }) => {
-  const last_crumb = props.crumbs.at(-1)
+const crumbNames: CrumbNames = {
+  projects: null,
+}
+
+const Breadcrumbs = (props: { crumbs?: BreadcrumbsElement[]; className?: string }) => {
+  const location = useLocation()
+
+  const crumbs: BreadcrumbsElement[] =
+    props.crumbs ||
+    location.pathname
+      .split("/")
+      .filter(piece => piece.length > 0)
+      .map((piece, index, array) => {
+        if (crumbNames[piece] === null) {
+          return null
+        }
+
+        return {
+          name: crumbNames[piece] || piece,
+          route: "/" + array.slice(0, index + 1).join("/"),
+        } as BreadcrumbsElement
+      })
+      .filter((crumb): crumb is BreadcrumbsElement => crumb !== null && crumb !== undefined)
+
+  const last_crumb = crumbs.at(-1)
 
   return (
     <nav className={props.className} aria-label="breadcrumb">
@@ -40,7 +55,7 @@ const Breadcrumbs = (props: { crumbs: BreadcrumbsElement[]; className?: string }
             Home
           </Link>
         </li>
-        {props.crumbs.slice(0, -1).map((crumb, index) => (
+        {crumbs.slice(0, -1).map((crumb, index) => (
           <li key={index} className="inline-flex items-center space-x-4">
             <span className="text-gray-400">/</span>
             <Link

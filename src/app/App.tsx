@@ -1,13 +1,13 @@
-import { Icon } from "@iconify/react"
-import { Button, Card, Divider, Flex, Title } from "@tremor/react"
+import { Button, Card, Divider, Flex, Grid, Icon, Metric, Text, Title } from "@tremor/react"
 
 import Container from "components/Container"
 import NavBar from "components/NavBar"
 
-import "./App.css"
+import { IconChevronRight, IconFlask, IconPackage } from "@tabler/icons-react"
 import { Link } from "react-router-dom"
+import "./App.css"
 
-const ChevronIcon = () => <Icon height={18} icon="tabler:chevron-right" />
+const ChevronIcon = () => <IconChevronRight height={18} />
 
 const InlineCode = (props: { text: string }) => (
   <span className="font-mono bg-gray-100 px-2 py-1 ml-2 border-2 rounded-md">{props.text}</span>
@@ -18,7 +18,7 @@ const PageCard = (props: { route: string }) => (
     <Flex>
       <div>
         <Title>
-          PageTest <InlineCode text={props.route} />
+          Page <InlineCode text={props.route} />
         </Title>
       </div>
     </Flex>
@@ -33,16 +33,39 @@ const PageCard = (props: { route: string }) => (
 )
 
 function App() {
+  const projects = 4
+  const deliverables = 27
+
   return (
-    <Container>
-      <NavBar title="App" />
+    <>
+      <Grid numItemsMd={2} className="mt-6 gap-6">
+        <Card>
+          <Flex justifyContent="start" className="space-x-4">
+            <Icon icon={IconFlask} variant="light" size="xl" color="blue" />
+            <div className="truncate">
+              <Text>Projects</Text>
+              <Metric className="truncate">{projects}</Metric>
+            </div>
+          </Flex>
+        </Card>
+        <Card>
+          <Flex justifyContent="start" className="space-x-4">
+            <Icon icon={IconPackage} variant="light" size="xl" color="blue" />
+            <div className="truncate">
+              <Text>Deliverables</Text>
+              <Metric className="truncate">{deliverables}</Metric>
+            </div>
+          </Flex>
+        </Card>
+      </Grid>
+
       <Divider />
-      <Flex flexDirection="col" className="gap-4 px-auto">
-        <PageCard route="/depot" />
+      <Grid numItemsMd={1} className="gap-6 px-auto">
         <PageCard route="/login" />
-        <PageCard route="/projects/:project" />
-      </Flex>
-    </Container>
+        <PageCard route="/projects/office_automation" />
+        <PageCard route="/projects/office_automation/iotinga-cli" />
+      </Grid>
+    </>
   )
 }
 

@@ -1,8 +1,8 @@
+import { IconChevronRight, IconCloudDownload } from "@tabler/icons-react"
 import { Badge, Button, Card, Flex, Subtitle, Title } from "@tremor/react"
-import { Icon } from "@iconify/react"
 
-const DownloadIcon = () => <Icon height={32} icon="tabler:cloud-download" />
-const ChevronIcon = () => <Icon height={18} icon="tabler:chevron-right" />
+const DownloadIcon = () => <IconCloudDownload size={32} />
+const ChevronIcon = () => <IconChevronRight size={18} />
 
 const DeliverableCard = () => (
   <Card>
@@ -14,7 +14,7 @@ const DeliverableCard = () => (
         </Flex>
         <Subtitle>Deliverable description</Subtitle>
       </div>
-      <Button variant="light" icon={DownloadIcon} />
+      <Button variant="light" icon={DownloadIcon} size="xl" />
     </Flex>
     <Flex className="mt-6 pt-4 border-t">
       {/* FIXME: align icon vertically */}

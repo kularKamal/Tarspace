@@ -21,6 +21,7 @@
     ]
   },
   "dependencies": {
+    "@tabler/icons-react": "^2.29.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -38,8 +39,6 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "@iconify/icons-tabler": "^1.2.80",
-    "@iconify/react": "^4.1.1",
     "@typescript-eslint/eslint-plugin": "^5.59.0",
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.45.0",

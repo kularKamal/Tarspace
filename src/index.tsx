@@ -1,9 +1,10 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
-import { Route, RouterProvider, Routes, createHashRouter, createRoutesFromElements } from "react-router-dom"
+import { Route, RouterProvider, createHashRouter, createRoutesFromElements } from "react-router-dom"
 
 import App from "./app/App"
 import { Depot } from "./app/depot/index"
+import Layout from "./app/layout"
 import { Login } from "./app/login/index"
 import { Project } from "./app/project"
 import reportWebVitals from "./reportWebVitals"
@@ -13,10 +14,14 @@ import "./index.css"
 const router = createHashRouter(
   createRoutesFromElements(
     <>
-      <Route path="/" element={<App />} />
-      <Route path="/depot" element={<Depot />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/projects/:project" element={<Project />} />
+      <Route path="/" element={<Layout />}>
+        <Route path="" element={<App />} />
+        <Route path="projects">
+          <Route path=":project" element={<Project />} />
+          <Route path=":project/:deliverable" element={<Depot />} />
+        </Route>
+      </Route>
     </>
   )
 )
