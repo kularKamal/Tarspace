@@ -1,6 +1,6 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
-import { Route, RouterProvider, Routes, createHashRouter, createRoutesFromElements } from "react-router-dom"
+import { BrowserRouter, Route, Routes } from "react-router-dom"
 
 import App from "./app/App"
 import { Depot } from "./app/depot/index"
@@ -8,23 +8,25 @@ import { Login } from "./app/login/index"
 import { Project } from "./app/project"
 import reportWebVitals from "./reportWebVitals"
 
+import { AppContextProvider } from "./contexts/AppContext"
+import { AuthContextProvider } from "./contexts/AuthContext"
 import "./index.css"
-
-const router = createHashRouter(
-  createRoutesFromElements(
-    <>
-      <Route path="/" element={<App />} />
-      <Route path="/depot" element={<Depot />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/projects/:project" element={<Project />} />
-    </>
-  )
-)
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <AppContextProvider>
+      <BrowserRouter>
+        <AuthContextProvider>
+          <Routes>
+            <Route path="/" element={<App />} />
+            <Route path="/depot" element={<Depot />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/projects/:project" element={<Project />} />
+          </Routes>
+        </AuthContextProvider>
+      </BrowserRouter>
+    </AppContextProvider>
   </React.StrictMode>
 )
 
