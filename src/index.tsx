@@ -9,6 +9,8 @@ import { Login } from "./app/login/index"
 import { Project } from "./app/project"
 import reportWebVitals from "./reportWebVitals"
 
+import { AppContextProvider } from "./contexts/AppContext"
+import { AuthContextProvider } from "./contexts/AuthContext"
 import "./index.css"
 
 const router = createHashRouter(
@@ -29,7 +31,18 @@ const router = createHashRouter(
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <AppContextProvider>
+      <BrowserRouter>
+        <AuthContextProvider>
+          <Routes>
+            <Route path="/" element={<App />} />
+            <Route path="/depot" element={<Depot />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/projects/:project" element={<Project />} />
+          </Routes>
+        </AuthContextProvider>
+      </BrowserRouter>
+    </AppContextProvider>
   </React.StrictMode>
 )
 
