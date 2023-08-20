@@ -42,7 +42,7 @@ export class CliAPI {
     return true
   }
 
-  onRequestError(callback: (error: any) => void) {
+  onRequestError(callback: (error: unknown) => void) {
     this.client.interceptors.response.use(null, callback)
   }
 }

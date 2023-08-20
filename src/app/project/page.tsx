@@ -1,14 +1,9 @@
 import { Flex, Metric, Text } from "@tremor/react"
 import { useLocation, useParams } from "react-router-dom"
 
-import Breadcrumbs from "components/Breadcrumbs"
+import { Breadcrumbs } from "components/Breadcrumbs"
 
 function Page() {
-  const { project } = useParams()
-  const projects = 4
-  const deliverables = 27
-  const location = useLocation()
-
   return (
     <>
       <Flex>
