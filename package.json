@@ -3,9 +3,9 @@
   "version": "0.1.2",
   "private": true,
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
     "eject": "react-scripts eject"
   },
   "browserslist": {
@@ -21,6 +21,9 @@
     ]
   },
   "dependencies": {
+    "@iotinga/ts-backpack-common": "^2.1.0",
+    "@iotinga/ts-backpack-couchdb-client": "^2.0.4",
+    "@tabler/icons-react": "^2.29.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -30,6 +33,7 @@
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "axios": "^1.4.0",
+    "lunr": "^2.3.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.14.2",
@@ -39,14 +43,26 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@craco/craco": "^7.1.0",
+    "@craco/types": "^7.1.0",
+    "@types/lunr": "^2.3.4",
     "@typescript-eslint/eslint-plugin": "^5.59.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "eslint": "^8.45.0",
+    "assert": "^2.0.0",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.0",
+    "eslint": "^8.46.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.3.4",
-    "prettier": "^3.0.0",
-    "tailwindcss": "^3.3.3"
+    "https-browserify": "^1.0.0",
+    "os-browserify": "^0.3.0",
+    "prettier": "^3.0.1",
+    "process": "^0.11.10",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "tailwindcss": "^3.3.3",
+    "url": "^0.11.1"
   }
 }
