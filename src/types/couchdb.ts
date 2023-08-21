@@ -31,15 +31,28 @@ export type DeliverableDoc = CouchdbDoc & {
   publish: PublishStep[]
 }
 
-export type EventDoc = {
+export type EventDoc = CouchdbDoc & {
   type: "event"
   event: string
-  timestamp: "2023-06-19T13:01:59.501207"
-  run_id: "build:/NOW2@IRSAP/1.8.116/github-actions-926"
-  config_id: null
-  project: "NOW2@IRSAP"
-  version: "1.8.116"
-  repository: "https://github.com/irsap-spa/now2"
-  stage: null
-  target: "config-elasticsearch"
+  timestamp: string
+  run_id: string
+  config_id: string | null
+  project: string
+  version: string
+  repository: string
+  stage: string
+  target: string
+}
+
+type SingleEvent = {
+  id: string
+  timestamp: string
+}
+
+export type EventGroup = {
+  partialId: string
+  start?: SingleEvent
+  stop?: SingleEvent
+  success?: SingleEvent
+  error?: SingleEvent
 }

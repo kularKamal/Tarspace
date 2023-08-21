@@ -68,8 +68,8 @@ function App() {
   const { CouchdbManager } = useContext(AppContext)
   const { username } = useContext(AuthContext)
 
-  let dbName = "userdb-" + Buffer.from(username as string).toString("hex")
-  let designDoc = username as string
+  const dbName = "userdb-" + Buffer.from(username as string).toString("hex")
+  const designDoc = username as string
   // if (userCtx !== undefined && userCtx.roles.includes("_admin")) {
   //   dbName = "companylog-ia6ch3s4"
   //   designDoc = "companylog"
