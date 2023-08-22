@@ -54,5 +54,5 @@ export type EventGroup = {
   start?: SingleEvent
   stop?: SingleEvent
   success?: SingleEvent
-  error?: SingleEvent
+  failure?: SingleEvent
 }

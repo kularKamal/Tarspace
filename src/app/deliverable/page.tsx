@@ -1,10 +1,12 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
-import { IconCalendar, IconChevronRight, IconClock, IconCloudDownload, IconTimeDuration0 } from "@tabler/icons-react"
+import { IconCalendar, IconChevronRight, IconClock, IconCloudDownload } from "@tabler/icons-react"
 import {
   Badge,
   Card,
   Flex,
   Grid,
+  List,
+  ListItem,
   Metric,
   SearchSelect,
   SearchSelectItem,
@@ -21,15 +23,16 @@ import {
   TableRow,
   Text,
 } from "@tremor/react"
+import { DateTime } from "luxon"
+import { FC, useContext, useEffect, useState } from "react"
+import { Link, useLocation, useParams } from "react-router-dom"
+
 import { Breadcrumbs, BreadcrumbsElement } from "components/Breadcrumbs"
 import { AppContext } from "contexts/AppContext"
 import { AuthContext } from "contexts/AuthContext"
-import { FC, useContext, useEffect, useState } from "react"
-import { Link, useLocation, useParams } from "react-router-dom"
 import { ArtifactDoc, DeliverableDoc, EventDoc, EventGroup } from "types/couchdb"
-import { StageInfoMap } from "../../types/deliverables"
-import { isStageName } from "../../utils/deliverables"
-import { DateTime } from "luxon"
+import { StageInfoMap } from "types/deliverables"
+import { isStageName } from "utils/deliverables"
 
 const ChevronIcon = () => <IconChevronRight height={18} />
 const DownloadIcon = () => <IconCloudDownload size={32} />
@@ -114,8 +117,11 @@ const ArtifactsTable: FC<ArtifactTableProps> = props => {
   )
 }
 
-type EventsViewProps = { events: EventGroup[] }
-function EventsView(props: EventsViewProps) {
+type EventsViewProps = {
+  events: EventGroup[]
+}
+
+const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
   function formatTimestamp(timestamp?: string) {
     if (timestamp === undefined) {
       return "No timestamp"
@@ -125,7 +131,7 @@ function EventsView(props: EventsViewProps) {
   }
 
   function getStateMessage(eventGroup: EventGroup) {
-    if (!eventGroup.stop) {
+    if (!eventGroup.success && !eventGroup.failure) {
       return "In progress"
     }
     if (eventGroup.success) {
@@ -135,7 +141,7 @@ function EventsView(props: EventsViewProps) {
   }
 
   function getStateColor(eventGroup: EventGroup) {
-    if (!eventGroup.stop) {
+    if (!eventGroup.success && !eventGroup.failure) {
       return "yellow"
     }
     if (eventGroup.success) {
@@ -145,12 +151,12 @@ function EventsView(props: EventsViewProps) {
   }
 
   return (
-    <Table className="mt-6">
+    <Table>
       <TableHead>
         <TableRow>
-          <TableHeaderCell>PARTIAL ID</TableHeaderCell>
-          <TableHeaderCell>INFO</TableHeaderCell>
-          <TableHeaderCell>STATE</TableHeaderCell>
+          <TableHeaderCell>Partial ID</TableHeaderCell>
+          <TableHeaderCell>Info</TableHeaderCell>
+          <TableHeaderCell>State</TableHeaderCell>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -252,10 +258,12 @@ function Page() {
     CouchdbManager.db(dbName)
       .design(designDoc)
       .view("grouped-events", {
-        reduce: false,
-        include_docs: true,
-        start_key: [params.customer, params.project, params.deliverable],
-        end_key: [params.customer, params.project, params.deliverable, "\uffff"],
+        reduce: true,
+        group: true,
+        // include_docs: true,
+        descending: true,
+        start_key: [params.customer, params.project, params.deliverable, "\uffff"],
+        end_key: [params.customer, params.project, params.deliverable],
       })
       .then(resp => {
         const groupedEvents: EventGroup[] = []
@@ -266,7 +274,7 @@ function Page() {
           }
           groupedEvents.push({
             partialId,
-            ...(row.value as any),
+            ...(row.value as Partial<EventGroup>),
           })
         })
         setEvents(groupedEvents)
@@ -292,24 +300,36 @@ function Page() {
         </TabList>
         <TabPanels>
           <TabPanel>
-            <Grid numItemsMd={2} numItemsLg={3} className="gap-6 mt-6">
+            <Grid
+              numItemsMd={2}
+              numItemsLg={Math.min(3, Object.entries(lastPublishedVersions).length)}
+              className="gap-6 mt-6"
+            >
               {Object.entries(lastPublishedVersions).map(([stageName, info]) => (
                 <Card key={stageName}>
-                  <Metric>{stageName.toUpperCase()}</Metric>
-                  <Flex>
-                    <Text>Current installed version</Text>
-                    <Text>{info.latestVersion}</Text>
-                  </Flex>
-                  <Flex>
-                    <Text>Last update date</Text>
-                    <Text>{DateTime.fromISO(info.timestamp).toLocaleString()}</Text>
-                  </Flex>
-                  <Flex>
-                    <Text>Configuration</Text>
-                    <Link to="">
-                      <Text color="blue">LATEST</Text>
-                    </Link>
-                  </Flex>
+                  <Metric>{stageName}</Metric>
+                  <List className="mt-4">
+                    <ListItem>
+                      <Flex>
+                        <Text>Current installed version</Text>
+                        <Text>{info.latestVersion}</Text>
+                      </Flex>
+                    </ListItem>
+                    <ListItem>
+                      <Flex>
+                        <Text>Last update date</Text>
+                        <Text>{DateTime.fromISO(info.timestamp).toLocaleString()}</Text>
+                      </Flex>
+                    </ListItem>
+                    <ListItem>
+                      <Flex>
+                        <Text>Configuration</Text>
+                        <Link to="">
+                          <Text color="blue">LATEST</Text>
+                        </Link>
+                      </Flex>
+                    </ListItem>
+                  </List>
                 </Card>
               ))}
             </Grid>
@@ -321,7 +341,9 @@ function Page() {
           </TabPanel>
           <TabPanel></TabPanel>
           <TabPanel>
-            <EventsView events={events} />
+            <Card className="mt-6">
+              <EventsView events={events} />
+            </Card>
           </TabPanel>
           <TabPanel>
             {/* <Grid numItemsMd={3} className="gap-4 mt-6">
