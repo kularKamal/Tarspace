@@ -1,5 +1,5 @@
 import { Logger } from "@iotinga/ts-backpack-common"
-import lunr, { ConfigFunction, Index, Pipeline, PipelineFunction } from "lunr"
+import lunr, { ConfigFunction, Index, Query } from "lunr"
 import { useMemo } from "react"
 
 const logger = new Logger("Search - Lunr")
@@ -65,3 +65,10 @@ export const useIndexableData =
     fields.forEach(field => builder.field(field))
     data.forEach(doc => builder.add(doc), builder)
   }
+
+export const useQueryWildcards =
+  (query: string, sep?: string): Index.QueryBuilder =>
+  queryBuilder =>
+    query.split(sep ? sep : " ").forEach(term => {
+      queryBuilder.term(term, { wildcard: Query.wildcard.LEADING | Query.wildcard.TRAILING })
+    })

@@ -1,15 +1,16 @@
 import { IconSearch, IconSearchOff, IconZoomExclamation } from "@tabler/icons-react"
-import { Button, Card, Col, Divider, Flex, Grid, TableCell, Text, TextInput, Title } from "@tremor/react"
-import { FC, useContext, useReducer, useRef, useState } from "react"
+import { Button, Card, Col, Divider, Flex, Grid, Text, TextInput, Title } from "@tremor/react"
+import { FC, useContext, useRef, useState } from "react"
+import { Link } from "react-router-dom"
 
-import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
 import { Spinner } from "components/Spinner"
 import { AppContext } from "contexts/AppContext"
 import { AuthContext } from "contexts/AuthContext"
 import useClickAway from "hooks/useClickAway"
-import { useIndexableData, useLunr } from "hooks/useLunr"
-import { Link } from "react-router-dom"
+import { useDebounce } from "hooks/useDebounce"
+import { useIndexableData, useLunr, useQueryWildcards } from "hooks/useLunr"
 import { DeliverableDoc } from "types/couchdb"
+import { Index, Query } from "lunr"
 
 const SEARCH_FIELDS = ["name", "project", "artifacts", "repository"]
 type SearcheableKeys = "name" | "project" | "artifacts" | "repository"
@@ -87,11 +88,14 @@ export const Search: FC = () => {
 
   const [deliverables, setDeliverables] = useState<Record<string, SearcheableDeliverable>>({})
   const [query, setQuery] = useState<string>("")
+  const debouncedQuery = useDebounce(query, 300)
+  const queryFn = useQueryWildcards(debouncedQuery)
+
   const [showResults, setShowResults] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const lunrIndexConfig = useIndexableData(Object.values(deliverables), "slug", SEARCH_FIELDS)
-  const results = useLunr(query, lunrIndexConfig)
+  const results = useLunr(queryFn, lunrIndexConfig)
 
   const resultsRef = useRef(null)
   useClickAway(resultsRef, () => {
