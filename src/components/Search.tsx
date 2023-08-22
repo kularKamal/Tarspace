@@ -1,18 +1,23 @@
 import { IconSearch, IconSearchOff, IconZoomExclamation } from "@tabler/icons-react"
-import { Button, Card, Divider, Flex, Text } from "@tremor/react"
-import lunr, { Index } from "lunr"
+import { Button, Card, Col, Divider, Flex, Grid, TableCell, Text, TextInput, Title } from "@tremor/react"
 import { FC, useContext, useReducer, useRef, useState } from "react"
 
-import useClickAway from "hooks/useClickAway"
-import { useLunr } from "hooks/useLunr"
+import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
 import { Spinner } from "components/Spinner"
 import { AppContext } from "contexts/AppContext"
 import { AuthContext } from "contexts/AuthContext"
+import useClickAway from "hooks/useClickAway"
+import { useIndexableData, useLunr } from "hooks/useLunr"
+import { Link } from "react-router-dom"
 import { DeliverableDoc } from "types/couchdb"
+
+const SEARCH_FIELDS = ["name", "project", "version", "artifacts", "repository"]
+type SearcheableKeys = "name" | "project" | "version" | "artifacts" | "repository"
+type SearcheableDeliverable = Pick<DeliverableDoc, SearcheableKeys> & CouchdbDoc
 
 type SearchResultsProps = {
   queryIsEmpty: boolean
-  results: Index.Result[]
+  results: SearcheableDeliverable[]
   loading: boolean
 }
 
@@ -26,9 +31,21 @@ const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading 
       <>
         {results.map((result, index, array) => (
           <>
-            <div key={result.ref}>
-              <span>{result.ref}</span>
-            </div>
+            <Link to={`/deliverables/${result.project.replace("@", "/")}/${result.name}`} key={result._id}>
+              <Grid numItems={3} className="gap-4" key={result._id}>
+                <Col numColSpan={1}>
+                  <Flex flexDirection="col" alignItems="start">
+                    <Title>{result.name}</Title>
+                    <Text>{result.version}</Text>
+                  </Flex>
+                </Col>
+                <Col numColSpan={2}>
+                  <Text>Project: {result.project}</Text>
+                  <Text>Repo: {result.repository}</Text>
+                  <Text>Artifacts: {result.artifacts.join(", ")}</Text>
+                </Col>
+              </Grid>
+            </Link>
             {index === array.length - 1 ? null : <Divider />}
           </>
         ))}
@@ -37,7 +54,7 @@ const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading 
   }
 
   return (
-    <Card className="z-20 mt-2 absolute">
+    <Card className="z-20 mt-2 mb-32 absolute overflow-y-auto max-h-[80vh]">
       {loading ? (
         <Flex role="status" flexDirection="col" justifyContent="center" alignItems="center" className="h-20">
           <Spinner />
@@ -67,27 +84,18 @@ export const Search: FC = () => {
   const { CouchdbManager } = useContext(AppContext)
   const { userDb, username } = useContext(AuthContext)
 
-  const [deliverables, setDeliverables] = useState<DeliverableDoc[]>([])
+  const [deliverables, setDeliverables] = useState<Record<string, DeliverableDoc>>({})
   const [query, setQuery] = useState<string>("")
-  const [showResults, toggleShowResults] = useReducer(bool => !bool, false)
+  const [showResults, setShowResults] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  const index = lunr(builder => {
-    builder.ref("_id")
-    builder.field("name")
-    builder.field("project")
-    builder.field("version")
-    builder.field("artifacts")
-    builder.field("repository")
-
-    deliverables.forEach(doc => builder.add(doc), builder)
-  })
-  const results = useLunr(query, index)
+  const lunrIndexConfig = useIndexableData(Object.values(deliverables), "_id", SEARCH_FIELDS)
+  const results = useLunr(query, lunrIndexConfig)
 
   const resultsRef = useRef(null)
   useClickAway(resultsRef, () => {
     if (showResults) {
-      toggleShowResults()
+      setShowResults(false)
     }
   })
 
@@ -103,7 +111,13 @@ export const Search: FC = () => {
         include_docs: true,
       })
       .then(resp => {
-        setDeliverables(resp.rows.filter(row => row.doc !== undefined).map(row => row.doc) as DeliverableDoc[])
+        const map: Record<string, DeliverableDoc> = {}
+        resp.rows
+          .filter(row => row.doc !== undefined)
+          .forEach(row => {
+            map[row.id] = row.doc as DeliverableDoc
+          })
+        setDeliverables(map)
         setLoading(false)
       })
   }
@@ -127,25 +141,36 @@ export const Search: FC = () => {
             Search
           </label>
           <div className="relative" ref={resultsRef}>
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-              <IconSearch size={22} />
-            </div>
-            <input
-              type="search"
+            <TextInput
+              type="text"
               id="default-search"
-              className="z-20 block w-full p-2 pl-12 text-tremor-content-strong border border-tremor-border rounded-lg bg-tremor-background-muted focus:outline-none focus:ring-0 focus:ring-offset-0"
+              className="z-20 bg-tremor-background-muted focus:outline-none focus:ring-0 focus:ring-offset-0"
               placeholder="Search..."
               autoComplete="off"
               autoCorrect="off"
-              onFocus={() => {
-                toggleShowResults()
+              icon={IconSearch}
+              onClickCapture={() => {
+                if (!showResults) {
+                  setShowResults(true)
+                }
                 fetchDeliverables()
               }}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => {
+                if (!showResults) {
+                  setShowResults(true)
+                }
+                setQuery(e.target.value)
+              }}
               required
             />
             <Button type="submit" variant="light" className="absolute right-2.5 bottom-2 font-medium py-2"></Button>
-            {showResults ? <SearchResults queryIsEmpty={query === ""} results={results} loading={loading} /> : null}
+            {showResults ? (
+              <SearchResults
+                queryIsEmpty={query === ""}
+                results={results.map(result => deliverables[result.ref])}
+                loading={loading}
+              />
+            ) : null}
           </div>
         </form>
         {showResults ? <SearchOverlay /> : null}

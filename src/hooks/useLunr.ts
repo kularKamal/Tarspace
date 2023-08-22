@@ -1,5 +1,5 @@
 import { Logger } from "@iotinga/ts-backpack-common"
-import { Index } from "lunr"
+import lunr, { ConfigFunction, Index, Pipeline, PipelineFunction } from "lunr"
 import { useMemo } from "react"
 
 const logger = new Logger("Search - Lunr")
@@ -52,5 +52,16 @@ export const useLunrWithStore = <T = unknown>(
   }, [query, index, store])
 }
 
-export const useLunr = (query?: string | Index.QueryBuilder, rawIndex?: Index | object | string) =>
+export const useLunrWithIndex = (query?: string | Index.QueryBuilder, rawIndex?: Index | object | string) =>
   useLunrWithStore(query, rawIndex) as Index.Result[]
+
+export const useLunr = (query: string | Index.QueryBuilder, config: ConfigFunction) =>
+  useLunrWithIndex(query, lunr(config))
+
+export const useIndexableData =
+  <T extends object>(data: T[], ref: string, fields: string[]): ConfigFunction =>
+  builder => {
+    builder.ref(ref)
+    fields.forEach(field => builder.field(field))
+    data.forEach(doc => builder.add(doc), builder)
+  }
