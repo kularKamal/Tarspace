@@ -23,7 +23,7 @@ import {
   TableRow,
   Text,
 } from "@tremor/react"
-import { DateTime } from "luxon"
+import { DateTime, LocaleOptions } from "luxon"
 import { FC, useContext, useEffect, useState } from "react"
 import { Link, useLocation, useParams } from "react-router-dom"
 
@@ -122,12 +122,16 @@ type EventsViewProps = {
 }
 
 const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
-  function formatTimestamp(timestamp?: string) {
+  function formatTimestamp(
+    timestamp?: string,
+    formatOpts?: Intl.DateTimeFormatOptions | undefined,
+    opts?: LocaleOptions | undefined
+  ) {
     if (timestamp === undefined) {
-      return "No timestamp"
+      return "Unknown"
     }
 
-    return DateTime.fromISO(timestamp).toLocaleString()
+    return DateTime.fromISO(timestamp).toLocaleString(formatOpts, opts)
   }
 
   function getStateMessage(eventGroup: EventGroup) {
@@ -150,6 +154,17 @@ const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
     return "red"
   }
 
+  function getFormattedTime(eventGroup: EventGroup) {
+    if (eventGroup.failure) {
+      return formatTimestamp(eventGroup.failure.timestamp, DateTime.TIME_SIMPLE)
+    }
+    if (eventGroup.success) {
+      return formatTimestamp(eventGroup.success.timestamp, DateTime.TIME_SIMPLE)
+    }
+
+    return null
+  }
+
   return (
     <Table>
       <TableHead>
@@ -170,7 +185,7 @@ const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
               </Flex>
               <Flex justifyContent="start">
                 <IconClock className="mr-5" />
-                <Text>{d.stop?.timestamp ? formatTimestamp(d.stop?.timestamp) : "In progress"}</Text>
+                <Text>{getFormattedTime(d) || "In progress"}</Text>
               </Flex>
             </TableCell>
             <TableCell>
