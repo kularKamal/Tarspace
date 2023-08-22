@@ -11,9 +11,11 @@ import { useIndexableData, useLunr } from "hooks/useLunr"
 import { Link } from "react-router-dom"
 import { DeliverableDoc } from "types/couchdb"
 
-const SEARCH_FIELDS = ["name", "project", "version", "artifacts", "repository"]
-type SearcheableKeys = "name" | "project" | "version" | "artifacts" | "repository"
-type SearcheableDeliverable = Pick<DeliverableDoc, SearcheableKeys> & CouchdbDoc
+const SEARCH_FIELDS = ["name", "project", "artifacts", "repository"]
+type SearcheableKeys = "name" | "project" | "artifacts" | "repository"
+type SearcheableDeliverable = Pick<DeliverableDoc, SearcheableKeys> & {
+  slug: string
+}
 
 type SearchResultsProps = {
   queryIsEmpty: boolean
@@ -31,16 +33,15 @@ const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading 
       <>
         {results.map((result, index, array) => (
           <>
-            <Link to={`/deliverables/${result.project.replace("@", "/")}/${result.name}`} key={result._id}>
-              <Grid numItems={3} className="gap-4" key={result._id}>
-                <Col numColSpan={1}>
+            <Link to={`/deliverables/${result.project.replace("@", "/")}/${result.name}`} key={result.slug}>
+              <Grid numItems={5} className="gap-4" key={result.slug}>
+                <Col numColSpan={2}>
                   <Flex flexDirection="col" alignItems="start">
                     <Title>{result.name}</Title>
-                    <Text>{result.version}</Text>
+                    <Text>{result.project}</Text>
                   </Flex>
                 </Col>
-                <Col numColSpan={2}>
-                  <Text>Project: {result.project}</Text>
+                <Col numColSpan={3}>
                   <Text>Repo: {result.repository}</Text>
                   <Text>Artifacts: {result.artifacts.join(", ")}</Text>
                 </Col>
@@ -84,12 +85,12 @@ export const Search: FC = () => {
   const { CouchdbManager } = useContext(AppContext)
   const { userDb, username } = useContext(AuthContext)
 
-  const [deliverables, setDeliverables] = useState<Record<string, DeliverableDoc>>({})
+  const [deliverables, setDeliverables] = useState<Record<string, SearcheableDeliverable>>({})
   const [query, setQuery] = useState<string>("")
   const [showResults, setShowResults] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  const lunrIndexConfig = useIndexableData(Object.values(deliverables), "_id", SEARCH_FIELDS)
+  const lunrIndexConfig = useIndexableData(Object.values(deliverables), "slug", SEARCH_FIELDS)
   const results = useLunr(query, lunrIndexConfig)
 
   const resultsRef = useRef(null)
@@ -106,17 +107,17 @@ export const Search: FC = () => {
 
     await CouchdbManager.db(userDb)
       .design(username)
-      .view("deliverables", {
-        reduce: false,
-        include_docs: true,
+      .view("deliverables-search", {
+        reduce: true,
+        group: true,
       })
       .then(resp => {
-        const map: Record<string, DeliverableDoc> = {}
-        resp.rows
-          .filter(row => row.doc !== undefined)
-          .forEach(row => {
-            map[row.id] = row.doc as DeliverableDoc
-          })
+        const map: Record<string, SearcheableDeliverable> = {}
+        resp.rows.forEach(row => {
+          const value = row.value as SearcheableDeliverable
+          const path = value.slug
+          map[path] = value
+        })
         setDeliverables(map)
         setLoading(false)
       })
