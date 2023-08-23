@@ -1,7 +1,15 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
-import { IconBrandGithub, IconCalendar, IconChevronRight, IconClock, IconCloudDownload } from "@tabler/icons-react"
+import {
+  IconBrandGithub,
+  IconCalendar,
+  IconChevronRight,
+  IconClock,
+  IconCloudDownload,
+  IconExternalLink,
+} from "@tabler/icons-react"
 import {
   Badge,
+  Button,
   Card,
   Flex,
   Grid,
@@ -23,6 +31,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  Title,
 } from "@tremor/react"
 import { DateTime, LocaleOptions } from "luxon"
 import { FC, useContext, useEffect, useState } from "react"
@@ -292,7 +301,7 @@ function Page() {
 
     CouchdbManager.db(dbName)
       .design(designDoc)
-      .view("latest-published-version", {
+      .view<(string | undefined)[], EventDoc>("latest-published-version", {
         reduce: false,
         include_docs: true,
         start_key: [params.customer, params.project, params.deliverable],
@@ -302,11 +311,12 @@ function Page() {
         const map: StageInfoMap = {}
         resp.rows.forEach(row => {
           const stageName = row.key.pop()
-          if (isStageName(stageName)) {
+          if (isStageName(stageName) && row.doc) {
             map[stageName] = {
               latestVersion: row.value as string,
-              timestamp: (row.doc as EventDoc).timestamp,
-              configurationId: (row.doc as EventDoc).config_id as string,
+              timestamp: row.doc.timestamp,
+              configurationId: row.doc.config_id as string,
+              repository: row.doc.repository,
             }
           }
         })
@@ -391,17 +401,30 @@ function Page() {
                 </Card>
               ))}
             </Grid>
-            <div className="mt-6">
-              <Card>
-                <Flex justifyContent="start" className="space-x-4">
+            <Grid numItems={2} className="gap-6">
+              <div className="mt-6">
+                <Card>
                   <Icon icon={IconBrandGithub} variant="light" size="xl" color="blue" />
-                  <div className="truncate">
-                    <Text>Repository</Text>
-                    <Metric className="truncate">{null}</Metric>
-                  </div>
-                </Flex>
-              </Card>
-            </div>
+                  <Title className="mt-6">Repository</Title>
+                  <Text className="mt-2">The source code for this deliverable can be found at the following link.</Text>
+                  <Flex className="mt-6 pt-4 border-t">
+                    <Link
+                      to={
+                        (Object.values(lastPublishedVersions)[0] &&
+                          Object.values(lastPublishedVersions)[0].repository) ||
+                        "#"
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="xs" variant="light" icon={IconExternalLink} iconPosition="right">
+                        Visit
+                      </Button>
+                    </Link>
+                  </Flex>
+                </Card>
+              </div>
+            </Grid>
           </TabPanel>
           <TabPanel></TabPanel>
           <TabPanel>

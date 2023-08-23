@@ -9,5 +9,6 @@ export type StageInfo = {
   latestVersion: string
   timestamp: string
   configurationId: string
+  repository: string
 }
 export type StageInfoMap = Partial<Record<StageName, StageInfo>>

@@ -31,7 +31,7 @@ const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading 
       <>
         {results.map((result, index, array) => (
           <>
-            <Link to={`/deliverables/${result.project.replace("@", "/")}/${result.name}`} key={result.slug}>
+            <Link to={`/deliverables/${result.project.replace("@", "/")}/${result.name}`} key={result.slug + index}>
               <Grid numItems={5} className="gap-4" key={result.slug}>
                 <Col numColSpan={2}>
                   <Flex flexDirection="col" alignItems="start">
