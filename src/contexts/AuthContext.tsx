@@ -46,6 +46,7 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
     return new CouchdbManager(CouchdbParams).sessionInfo().then(resp => {
       if (resp.userCtx?.name) {
         setUsername(resp.userCtx?.name)
+        setUserDb(usernameToDbName(resp.userCtx?.name))
       }
       return resp
     })

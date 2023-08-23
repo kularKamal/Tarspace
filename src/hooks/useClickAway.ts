@@ -2,9 +2,9 @@ import { RefObject, useEffect, useRef } from "react"
 
 const defaultEvents = ["mousedown", "touchstart"]
 
-const useClickAway = <E extends Event = Event>(
-  ref: RefObject<HTMLElement | null>,
-  onClickAway: (event: E) => void,
+const useClickAway = <El extends HTMLElement>(
+  onClickAway: (event: Event) => void,
+  ref: RefObject<El> = { current: null },
   events: string[] = defaultEvents
 ) => {
   const savedCallback = useRef(onClickAway)
@@ -27,6 +27,8 @@ const useClickAway = <E extends Event = Event>(
       }
     }
   }, [events, ref])
+
+  return ref
 }
 
 export default useClickAway

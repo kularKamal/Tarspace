@@ -1,58 +1,181 @@
-import { IconSearch } from "@tabler/icons-react"
-import { Button, Flex } from "@tremor/react"
-import useClickAway from "hooks/useClickAway"
-import { useLunr } from "hooks/useLunr"
-import { Index } from "lunr"
-import { FC, useReducer, useRef, useState } from "react"
+import { IconSearch, IconSearchOff, IconZoomExclamation } from "@tabler/icons-react"
+import { Button, Card, Col, Divider, Flex, Grid, Text, TextInput, Title } from "@tremor/react"
+import { FC, useContext, useRef, useState } from "react"
+import { Link } from "react-router-dom"
 
-type SearchOverlayProps = {
-  results: Index.Result[]
+import { Spinner } from "components/Spinner"
+import { AppContext } from "contexts/AppContext"
+import { AuthContext } from "contexts/AuthContext"
+import useClickAway from "hooks/useClickAway"
+import { useDebounce } from "hooks/useDebounce"
+import { useIndexableData, useLunr, useQueryWildcards } from "hooks/useLunr"
+import { DeliverableDoc } from "types/couchdb"
+import { Index, Query } from "lunr"
+
+const SEARCH_FIELDS = ["name", "project", "artifacts", "repository"]
+type SearcheableKeys = "name" | "project" | "artifacts" | "repository"
+type SearcheableDeliverable = Pick<DeliverableDoc, SearcheableKeys> & {
+  slug: string
 }
 
-const SearchResults: FC<SearchOverlayProps> = ({ results }) => (
-  <div className="z-20">
-    {results.map((result, index) => (
-      <span key={index}>{result.ref}</span>
-    ))}
-  </div>
+type SearchResultsProps = {
+  queryIsEmpty: boolean
+  results: SearcheableDeliverable[]
+  loading: boolean
+}
+
+const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading }) => {
+  let Content = <SearchNoResultsView />
+
+  if (queryIsEmpty) {
+    Content = <SearchEmptyView />
+  } else if (results.length !== 0) {
+    Content = (
+      <>
+        {results.map((result, index, array) => (
+          <>
+            <Link to={`/deliverables/${result.project.replace("@", "/")}/${result.name}`} key={result.slug}>
+              <Grid numItems={5} className="gap-4" key={result.slug}>
+                <Col numColSpan={2}>
+                  <Flex flexDirection="col" alignItems="start">
+                    <Title>{result.name}</Title>
+                    <Text>{result.project}</Text>
+                  </Flex>
+                </Col>
+                <Col numColSpan={3}>
+                  <Text>Repo: {result.repository}</Text>
+                  <Text>Artifacts: {result.artifacts.join(", ")}</Text>
+                </Col>
+              </Grid>
+            </Link>
+            {index === array.length - 1 ? null : <Divider />}
+          </>
+        ))}
+      </>
+    )
+  }
+
+  return (
+    <Card className="z-20 mt-2 mb-32 absolute overflow-y-auto max-h-[80vh]">
+      {loading ? (
+        <Flex role="status" flexDirection="col" justifyContent="center" alignItems="center" className="h-20">
+          <Spinner />
+        </Flex>
+      ) : (
+        Content
+      )}
+    </Card>
+  )
+}
+
+const SearchEmptyView = () => (
+  <Flex className="h-20" justifyContent="center">
+    <IconZoomExclamation size={32} stroke={1} className="text-tremor-content-subtle" />
+    <Text className="ml-3 mb-1 text-tremor-content-subtle text-center">Start typing to search</Text>
+  </Flex>
+)
+
+const SearchNoResultsView = () => (
+  <Flex className="h-20" justifyContent="center">
+    <IconSearchOff size={32} stroke={1} className="text-tremor-content-subtle" />
+    <Text className="ml-3 mb-1 text-tremor-content-subtle text-center">No results found</Text>
+  </Flex>
 )
 
 export const Search: FC = () => {
+  const { CouchdbManager } = useContext(AppContext)
+  const { userDb, username } = useContext(AuthContext)
+
+  const [deliverables, setDeliverables] = useState<Record<string, SearcheableDeliverable>>({})
   const [query, setQuery] = useState<string>("")
-  const [showResults, toggleShowResults] = useReducer(bool => !bool, false)
-  const results = useLunr(query)
+  const debouncedQuery = useDebounce(query, 300)
+  const queryFn = useQueryWildcards(debouncedQuery)
+
+  const [showResults, setShowResults] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const lunrIndexConfig = useIndexableData(Object.values(deliverables), "slug", SEARCH_FIELDS)
+  const results = useLunr(queryFn, lunrIndexConfig)
 
   const resultsRef = useRef(null)
-  useClickAway(resultsRef, () => {
+  useClickAway(() => {
     if (showResults) {
-      toggleShowResults()
+      setShowResults(false)
     }
-  })
+  }, resultsRef)
+
+  async function fetchDeliverables() {
+    if (userDb === undefined || username === undefined) {
+      return
+    }
+
+    await CouchdbManager.db(userDb)
+      .design(username)
+      .view("deliverables-search", {
+        reduce: true,
+        group: true,
+      })
+      .then(resp => {
+        const map: Record<string, SearcheableDeliverable> = {}
+        resp.rows.forEach(row => {
+          const value = row.value as SearcheableDeliverable
+          const path = value.slug
+          map[path] = value
+        })
+        setDeliverables(map)
+        setLoading(false)
+      })
+  }
 
   return (
-    <div className={`${showResults && "w-1/2"}`}>
+    <div
+      style={{
+        transition: "width ease 400ms",
+        width: showResults ? "50%" : undefined,
+      }}
+    >
       <Flex flexDirection="col" justifyContent="around">
-        <form className="w-full z-20" onSubmit={e => e.preventDefault()}>
+        <form
+          className="w-full z-20"
+          onSubmit={e => e.preventDefault()}
+          style={{
+            transition: "width ease 400ms",
+          }}
+        >
           <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only">
             Search
           </label>
           <div className="relative" ref={resultsRef}>
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-              <IconSearch size={22} />
-            </div>
-            <input
-              type="search"
+            <TextInput
+              type="text"
               id="default-search"
-              className="z-20 block w-full p-2 pl-12 text-tremor-content-strong border border-tremor-border rounded-lg bg-tremor-background-muted"
+              className="z-20 bg-tremor-background-muted focus:outline-none focus:ring-0 focus:ring-offset-0"
               placeholder="Search..."
               autoComplete="off"
               autoCorrect="off"
-              onFocus={toggleShowResults}
-              onChange={e => setQuery(e.target.value)}
+              icon={IconSearch}
+              onClickCapture={() => {
+                if (!showResults) {
+                  setShowResults(true)
+                }
+                fetchDeliverables()
+              }}
+              onChange={e => {
+                if (!showResults) {
+                  setShowResults(true)
+                }
+                setQuery(e.target.value)
+              }}
               required
             />
             <Button type="submit" variant="light" className="absolute right-2.5 bottom-2 font-medium py-2"></Button>
-            {showResults ? <SearchResults results={results} /> : null}
+            {showResults ? (
+              <SearchResults
+                queryIsEmpty={query === ""}
+                results={results.map(result => deliverables[result.ref])}
+                loading={loading}
+              />
+            ) : null}
           </div>
         </form>
         {showResults ? <SearchOverlay /> : null}
@@ -61,9 +184,12 @@ export const Search: FC = () => {
   )
 }
 
-export const SearchOverlay: FC = () => (
+const SearchOverlay: FC = () => (
   <div
-    className="w-full h-full fixed top-0 left-0 z-10"
-    style={{ backgroundColor: "rgba(0, 0, 0, 0.3)", transition: "opacity ease 400ms, width 0s, height 0s" }}
+    className="w-full h-full fixed top-0 left-0 z-10 pointer-events-none"
+    style={{
+      backgroundColor: "rgba(0, 0, 0, 0.3)",
+      transition: "opacity ease 400ms, width 0s, height 0s",
+    }}
   ></div>
 )
