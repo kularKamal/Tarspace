@@ -98,11 +98,11 @@ export const Search: FC = () => {
   const results = useLunr(queryFn, lunrIndexConfig)
 
   const resultsRef = useRef(null)
-  useClickAway(resultsRef, () => {
+  useClickAway(() => {
     if (showResults) {
       setShowResults(false)
     }
-  })
+  }, resultsRef)
 
   async function fetchDeliverables() {
     if (userDb === undefined || username === undefined) {
