@@ -241,10 +241,28 @@ function Page() {
   const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
 
   function sortEventGroups(a: EventGroup, b: EventGroup) {
-    const aStop = a.success ? a.success : a.failure
-    const bStop = b.success ? b.success : b.failure
+    const aStop = a.success || a.failure
+    const bStop = b.success || b.failure
 
-    // DateTime.fromISO(aStop?.timestamp)
+    const aStartTS = (a.start && DateTime.fromISO(a.start.timestamp)) || DateTime.fromMillis(0)
+    const bStartTS = (b.start && DateTime.fromISO(b.start.timestamp)) || DateTime.fromMillis(0)
+
+    const aStopTS = (aStop && DateTime.fromISO(aStop.timestamp)) || aStartTS
+    const bStopTS = (bStop && DateTime.fromISO(bStop.timestamp)) || bStartTS
+
+    if (aStartTS < bStartTS) {
+      return 1
+    }
+
+    if (aStopTS < bStopTS) {
+      return 1
+    }
+
+    if (aStopTS > bStopTS) {
+      return -1
+    }
+
+    return 0
   }
 
   useEffect(() => {
@@ -316,6 +334,7 @@ function Page() {
             ...(row.value as Partial<EventGroup>),
           })
         })
+        groupedEvents.sort(sortEventGroups)
         setEvents(groupedEvents)
       })
   }, [CouchdbManager, dbName, designDoc, params])
