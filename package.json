@@ -1,6 +1,6 @@
 {
   "name": "iotinga-dashboard-cra",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "private": true,
   "scripts": {
     "start": "craco start",
