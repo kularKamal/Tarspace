@@ -1,10 +1,11 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
-import { IconCalendar, IconChevronRight, IconClock, IconCloudDownload } from "@tabler/icons-react"
+import { IconBrandGithub, IconCalendar, IconChevronRight, IconClock, IconCloudDownload } from "@tabler/icons-react"
 import {
   Badge,
   Card,
   Flex,
   Grid,
+  Icon,
   List,
   ListItem,
   Metric,
@@ -168,7 +169,8 @@ const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
       <TableHead>
         <TableRow>
           <TableHeaderCell>Partial ID</TableHeaderCell>
-          <TableHeaderCell>Info</TableHeaderCell>
+          <TableHeaderCell>Start</TableHeaderCell>
+          <TableHeaderCell>End</TableHeaderCell>
           <TableHeaderCell>State</TableHeaderCell>
         </TableRow>
       </TableHead>
@@ -183,8 +185,26 @@ const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
               </Flex>
               <Flex justifyContent="start">
                 <IconClock className="mr-5" />
-                <Text>{getFormattedTime(d) || "In progress"}</Text>
+                <Text>{formatTimestamp(d.start?.timestamp, DateTime.TIME_SIMPLE)}</Text>
               </Flex>
+            </TableCell>
+            <TableCell>
+              {d.failure || d.success ? (
+                <>
+                  <Flex justifyContent="start">
+                    <IconCalendar className="mr-5" />
+                    <Text>
+                      {d.failure ? formatTimestamp(d.failure?.timestamp) : formatTimestamp(d.success?.timestamp)}
+                    </Text>
+                  </Flex>
+                  <Flex justifyContent="start">
+                    <IconClock className="mr-5" />
+                    <Text>{getFormattedTime(d) || "In progress"}</Text>
+                  </Flex>
+                </>
+              ) : (
+                <Text>-</Text>
+              )}
             </TableCell>
             <TableCell>
               <Badge size="xl" color={getStateColor(d)}>
@@ -219,6 +239,13 @@ function Page() {
   const [events, setEvents] = useState<EventGroup[]>([])
   const [deliverables, setDeliverables] = useState<DeliverableDoc[]>([])
   const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
+
+  function sortEventGroups(a: EventGroup, b: EventGroup) {
+    const aStop = a.success ? a.success : a.failure
+    const bStop = b.success ? b.success : b.failure
+
+    // DateTime.fromISO(aStop?.timestamp)
+  }
 
   useEffect(() => {
     CouchdbManager.db(dbName)
@@ -274,9 +301,8 @@ function Page() {
         reduce: true,
         group: true,
         // include_docs: true,
-        descending: true,
-        start_key: [params.customer, params.project, params.deliverable, "\uffff"],
-        end_key: [params.customer, params.project, params.deliverable],
+        start_key: [params.customer, params.project, params.deliverable],
+        end_key: [params.customer, params.project, params.deliverable, "\uffff"],
       })
       .then(resp => {
         const groupedEvents: EventGroup[] = []
@@ -348,7 +374,13 @@ function Page() {
             </Grid>
             <div className="mt-6">
               <Card>
-                <div className="h-80" />
+                <Flex justifyContent="start" className="space-x-4">
+                  <Icon icon={IconBrandGithub} variant="light" size="xl" color="blue" />
+                  <div className="truncate">
+                    <Text>Repository</Text>
+                    <Metric className="truncate">{null}</Metric>
+                  </div>
+                </Flex>
               </Card>
             </div>
           </TabPanel>
