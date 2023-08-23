@@ -14,9 +14,16 @@ export const useClickAway = <El extends HTMLElement>(
   }, [onClickAway])
 
   useEffect(() => {
-    const handler = (event: any) => {
+    const handler = (event: Event) => {
       const { current: el } = ref
-      el && !el.contains(event.target) && savedCallback.current(event)
+
+      if (!el) {
+        return
+      }
+
+      if (event.target instanceof Node && !el.contains(event.target)) {
+        savedCallback.current(event)
+      }
     }
     for (const eventName of events) {
       document.addEventListener(eventName, handler)
