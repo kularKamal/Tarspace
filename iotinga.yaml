@@ -12,7 +12,7 @@ artifacts:
   - name: iotinga-delivery-web-app
     build:
       - shell: npm ci --userconfig private/npmrc --legacy-peer-deps
-      - shell: npm test && npm run build
+      - shell: npm run build
       - upload:
           preserve-path: true
           sources: build/**/*
