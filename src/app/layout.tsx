@@ -1,8 +1,6 @@
-import { Divider } from "@tremor/react"
 import { Outlet } from "react-router-dom"
 
-import Container from "components/Container"
-import NavBar from "components/NavBar"
+import { Container, NavBar } from "components"
 
 function Layout() {
   return (

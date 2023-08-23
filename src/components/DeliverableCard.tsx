@@ -7,7 +7,7 @@ const ChevronIcon = () => <IconChevronRight size={18} />
 
 type ArtifactCardProps = Record<string, never>
 
-const ArtifactCard: FC<ArtifactCardProps> = () => (
+export const ArtifactCard: FC<ArtifactCardProps> = () => (
   <Card>
     <Flex>
       <div>
@@ -26,5 +26,3 @@ const ArtifactCard: FC<ArtifactCardProps> = () => (
     </Flex> */}
   </Card>
 )
-
-export default ArtifactCard

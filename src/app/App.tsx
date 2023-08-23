@@ -19,8 +19,7 @@ import {
 } from "@tremor/react"
 import { Link } from "react-router-dom"
 
-import { AppContext } from "contexts/AppContext"
-import { AuthContext } from "contexts/AuthContext"
+import { AppContext, AuthContext } from "contexts"
 import { useContext, useEffect, useState } from "react"
 import "./App.css"
 

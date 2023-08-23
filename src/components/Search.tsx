@@ -6,11 +6,8 @@ import { Link } from "react-router-dom"
 import { Spinner } from "components/Spinner"
 import { AppContext } from "contexts/AppContext"
 import { AuthContext } from "contexts/AuthContext"
-import useClickAway from "hooks/useClickAway"
-import { useDebounce } from "hooks/useDebounce"
-import { useIndexableData, useLunr, useQueryWildcards } from "hooks/useLunr"
+import { useClickAway, useDebounce, useIndexableData, useLunr, useQueryWildcards } from "hooks"
 import { DeliverableDoc } from "types/couchdb"
-import { Index, Query } from "lunr"
 
 const SEARCH_FIELDS = ["name", "project", "artifacts", "repository"]
 type SearcheableKeys = "name" | "project" | "artifacts" | "repository"

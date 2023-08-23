@@ -7,10 +7,8 @@ import App from "app/App"
 import { Deliverable } from "app/deliverable/index"
 import Layout from "app/layout"
 import { Login } from "app/login/index"
-
 import { ProtectedRoute } from "components/ProtectedRoute"
-import { AppContextProvider } from "contexts/AppContext"
-import { AuthContextProvider } from "contexts/AuthContext"
+import { AppContextProvider, AuthContextProvider } from "contexts"
 import "./index.css"
 
 const logger = new Logger("App")
