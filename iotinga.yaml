@@ -11,7 +11,8 @@ prepare:
 artifacts:
   - name: iotinga-delivery-web-app
     build:
-      - shell: npm ci && npm test && npm run build
+      - shell: npm ci --userconfig ../private/npmrc ci --legacy-peer-deps
+      - shell: npm test && npm run build
       - upload:
           preserve-path: true
           sources: build/**/*
