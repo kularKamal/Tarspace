@@ -1,10 +1,10 @@
 import { Button, Card, Flex, Metric, TextInput } from "@tremor/react"
 import { useContext, useRef, useState } from "react"
-
-import Container from "components/Container"
-import { AuthContext } from "contexts/AuthContext"
 import { useLocation, useNavigate } from "react-router-dom"
-import { LocationState } from "types/misc"
+
+import { Container } from "components"
+import { AuthContext } from "contexts"
+import { LocationState } from "types"
 
 function Page() {
   const { signIn } = useContext(AuthContext)

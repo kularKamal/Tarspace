@@ -27,12 +27,10 @@ import { DateTime, LocaleOptions } from "luxon"
 import { FC, useContext, useEffect, useState } from "react"
 import { Link, useLocation, useParams } from "react-router-dom"
 
-import { Breadcrumbs, BreadcrumbsElement } from "components/Breadcrumbs"
-import { AppContext } from "contexts/AppContext"
-import { AuthContext } from "contexts/AuthContext"
-import { ArtifactDoc, DeliverableDoc, EventDoc, EventGroup } from "types/couchdb"
-import { StageInfoMap } from "types/deliverables"
-import { isStageName } from "utils/deliverables"
+import { Breadcrumbs, BreadcrumbsElement } from "components"
+import { AppContext, AuthContext } from "contexts"
+import { ArtifactDoc, DeliverableDoc, EventDoc, EventGroup, StageInfoMap } from "types"
+import { isStageName } from "utils"
 
 const ChevronIcon = () => <IconChevronRight height={18} />
 const DownloadIcon = () => <IconCloudDownload size={32} />

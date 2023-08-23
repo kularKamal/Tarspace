@@ -1,7 +1,6 @@
 import { Flex, Metric, Text } from "@tremor/react"
-import { useLocation, useParams } from "react-router-dom"
 
-import { Breadcrumbs } from "components/Breadcrumbs"
+import { Breadcrumbs } from "components"
 
 function Page() {
   return (
