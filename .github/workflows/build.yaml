@@ -25,7 +25,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "18"
-          registry-url: "https://npm.pkg.github.com"
       - name: Install Iotinga CLI
         run: python3 -m pip install --user "${{ env.IOTINGA_CLI_URL }}"
       - name: Prepare for build
@@ -50,5 +49,3 @@ jobs:
         run: python3 -m pip install --user "${{ env.IOTINGA_CLI_URL }}"
       - name: Build iotinga delivery web app
         run: python3 -m iotinga ci build iotinga-delivery-web-app
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
