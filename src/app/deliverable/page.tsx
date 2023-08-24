@@ -1,14 +1,6 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
+import { IconBrandGithub, IconChevronRight, IconCloudDownload, IconExternalLink } from "@tabler/icons-react"
 import {
-  IconBrandGithub,
-  IconCalendar,
-  IconChevronRight,
-  IconClock,
-  IconCloudDownload,
-  IconExternalLink,
-} from "@tabler/icons-react"
-import {
-  Badge,
   Button,
   Card,
   Flex,
@@ -17,215 +9,27 @@ import {
   List,
   ListItem,
   Metric,
-  SearchSelect,
-  SearchSelectItem,
   Tab,
   TabGroup,
   TabList,
   TabPanel,
   TabPanels,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
   Text,
   Title,
 } from "@tremor/react"
-import { DateTime, LocaleOptions } from "luxon"
-import { FC, useContext, useEffect, useState } from "react"
+import { DateTime } from "luxon"
+import { useContext, useEffect, useState } from "react"
 import { Link, useLocation, useParams } from "react-router-dom"
 
+import { EventsView } from "app/deliverable/events"
+import { VersionEvents, VersionsView } from "app/deliverable/versions"
 import { Breadcrumbs, BreadcrumbsElement } from "components"
 import { AppContext, AuthContext } from "contexts"
-import { ArtifactDoc, DeliverableDoc, EventDoc, EventGroup, StageInfoMap } from "types"
+import { EventDoc, EventGroup, StageInfoMap } from "types"
 import { isStageName } from "utils"
 
 const ChevronIcon = () => <IconChevronRight height={18} />
 const DownloadIcon = () => <IconCloudDownload size={32} />
-
-type Artifact = {
-  name: string
-  url: string
-}
-
-type ArtifactTableProps = { artifacts: string[] }
-
-const ArtifactsTable: FC<ArtifactTableProps> = props => {
-  const { CouchdbManager } = useContext(AppContext)
-  const { username } = useContext(AuthContext)
-
-  const dbName = "userdb-" + Buffer.from(username as string).toString("hex")
-  const designDoc = username as string
-
-  const [artifacts, setArtifacts] = useState<ArtifactDoc[]>([])
-  const [selectedArtifact, setSelectedArtifact] = useState<string | null>(null)
-  const [selectedVersion, setSelectedVersion] = useState<string | null>(null)
-
-  useEffect(() => {
-    CouchdbManager.db(dbName)
-      .design(designDoc)
-      .viewQueries("artifacts", {
-        queries: props.artifacts.map(a => ({
-          reduce: false,
-          include_docs: true,
-          start_key: ["IRSAP", "NOW2", a],
-          end_key: ["IRSAP", "NOW2", a, "\uffff"],
-        })),
-      })
-      .then(resp => {
-        setArtifacts(
-          resp.results
-            .flatMap(q => q.rows)
-            .map(row => row.doc)
-            .filter(doc => doc !== undefined) as ArtifactDoc[]
-        )
-      })
-  }, [CouchdbManager, dbName, designDoc, props.artifacts])
-
-  return (
-    <Card>
-      <Flex className="space-x-4" justifyContent="start" alignItems="center">
-        <SearchSelect
-          value={selectedArtifact || ""}
-          onValueChange={value => {
-            setSelectedArtifact(value)
-            setSelectedVersion(null)
-          }}
-          placeholder="Customer"
-          className="max-w-xs"
-        >
-          {props.artifacts.map(artifact => (
-            <SearchSelectItem key={artifact} value={artifact}>
-              {artifact}
-            </SearchSelectItem>
-          ))}
-        </SearchSelect>
-
-        <SearchSelect
-          value={selectedVersion || ""}
-          onValueChange={value => {
-            setSelectedVersion(value)
-          }}
-          placeholder="Project"
-          className="max-w-xs"
-          disabled={selectedArtifact === undefined}
-        >
-          {artifacts
-            .filter(doc => doc.name === selectedArtifact)
-            .map((doc, index) => (
-              <SearchSelectItem key={index} value={doc.version}>
-                {doc.version}
-              </SearchSelectItem>
-            ))}
-        </SearchSelect>
-      </Flex>
-    </Card>
-  )
-}
-
-type EventsViewProps = {
-  events: EventGroup[]
-}
-
-const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
-  function formatTimestamp(
-    timestamp?: string,
-    formatOpts?: Intl.DateTimeFormatOptions | undefined,
-    opts?: LocaleOptions | undefined
-  ) {
-    if (timestamp === undefined) {
-      return "Unknown"
-    }
-
-    return DateTime.fromISO(timestamp).toLocaleString(formatOpts, opts)
-  }
-
-  function getStateMessage(eventGroup: EventGroup) {
-    if (!eventGroup.success && !eventGroup.failure) {
-      return "In progress"
-    }
-    if (eventGroup.success) {
-      return "Success"
-    }
-    return "Failure"
-  }
-
-  function getStateColor(eventGroup: EventGroup) {
-    if (!eventGroup.success && !eventGroup.failure) {
-      return "yellow"
-    }
-    if (eventGroup.success) {
-      return "green"
-    }
-    return "red"
-  }
-
-  function getFormattedTime(eventGroup: EventGroup) {
-    if (eventGroup.failure) {
-      return formatTimestamp(eventGroup.failure.timestamp, DateTime.TIME_SIMPLE)
-    }
-    if (eventGroup.success) {
-      return formatTimestamp(eventGroup.success.timestamp, DateTime.TIME_SIMPLE)
-    }
-
-    return null
-  }
-
-  return (
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableHeaderCell>Partial ID</TableHeaderCell>
-          <TableHeaderCell>Start</TableHeaderCell>
-          <TableHeaderCell>End</TableHeaderCell>
-          <TableHeaderCell>State</TableHeaderCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {props.events.map((d, index) => (
-          <TableRow key={index}>
-            <TableCell>{d.partialId}</TableCell>
-            <TableCell>
-              <Flex justifyContent="start">
-                <IconCalendar className="mr-5" />
-                <Text>{formatTimestamp(d.start?.timestamp)}</Text>
-              </Flex>
-              <Flex justifyContent="start">
-                <IconClock className="mr-5" />
-                <Text>{formatTimestamp(d.start?.timestamp, DateTime.TIME_SIMPLE)}</Text>
-              </Flex>
-            </TableCell>
-            <TableCell>
-              {d.failure || d.success ? (
-                <>
-                  <Flex justifyContent="start">
-                    <IconCalendar className="mr-5" />
-                    <Text>
-                      {d.failure ? formatTimestamp(d.failure?.timestamp) : formatTimestamp(d.success?.timestamp)}
-                    </Text>
-                  </Flex>
-                  <Flex justifyContent="start">
-                    <IconClock className="mr-5" />
-                    <Text>{getFormattedTime(d) || "In progress"}</Text>
-                  </Flex>
-                </>
-              ) : (
-                <Text>-</Text>
-              )}
-            </TableCell>
-            <TableCell>
-              <Badge size="xl" color={getStateColor(d)}>
-                {getStateMessage(d)}
-              </Badge>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  )
-}
 
 function Page() {
   const location = useLocation()
@@ -244,61 +48,10 @@ function Page() {
   const dbName = "userdb-" + Buffer.from(username as string).toString("hex")
   const designDoc = username as string
 
-  const [publishEvents, setPublishEvents] = useState<CouchdbDoc[]>([])
-  const [events, setEvents] = useState<EventGroup[]>([])
-  const [deliverables, setDeliverables] = useState<DeliverableDoc[]>([])
+  const [events, setEvents] = useState<VersionEvents>({})
   const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
 
-  function sortEventGroups(a: EventGroup, b: EventGroup) {
-    const aStop = a.success || a.failure
-    const bStop = b.success || b.failure
-
-    const aStartTS = (a.start && DateTime.fromISO(a.start.timestamp)) || DateTime.fromMillis(0)
-    const bStartTS = (b.start && DateTime.fromISO(b.start.timestamp)) || DateTime.fromMillis(0)
-
-    const aStopTS = (aStop && DateTime.fromISO(aStop.timestamp)) || aStartTS
-    const bStopTS = (bStop && DateTime.fromISO(bStop.timestamp)) || bStartTS
-
-    if (aStartTS < bStartTS) {
-      return 1
-    }
-
-    if (aStopTS < bStopTS) {
-      return 1
-    }
-
-    if (aStopTS > bStopTS) {
-      return -1
-    }
-
-    return 0
-  }
-
   useEffect(() => {
-    CouchdbManager.db(dbName)
-      .design(designDoc)
-      .view("events-publish", {
-        reduce: false,
-        include_docs: true,
-        start_key: [params.customer, params.project, params.deliverable],
-        end_key: [params.customer, params.project, params.deliverable, "\uffff"],
-      })
-      .then(resp => {
-        setPublishEvents(resp.rows.map(row => row.doc).filter(doc => doc !== undefined) as CouchdbDoc[])
-      })
-
-    CouchdbManager.db(dbName)
-      .design(designDoc)
-      .view("deliverables", {
-        reduce: false,
-        include_docs: true,
-        start_key: [params.customer, params.project, params.deliverable],
-        end_key: [params.customer, params.project, params.deliverable, "\uffff"],
-      })
-      .then(resp => {
-        setDeliverables(resp.rows.map(row => row.doc).filter(doc => doc !== undefined) as DeliverableDoc[])
-      })
-
     CouchdbManager.db(dbName)
       .design(designDoc)
       .view<(string | undefined)[], EventDoc>("latest-published-version", {
@@ -325,26 +78,25 @@ function Page() {
 
     CouchdbManager.db(dbName)
       .design(designDoc)
-      .view("grouped-events", {
+      .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
         reduce: true,
         group: true,
-        // include_docs: true,
         start_key: [params.customer, params.project, params.deliverable],
         end_key: [params.customer, params.project, params.deliverable, "\uffff"],
       })
       .then(resp => {
-        const groupedEvents: EventGroup[] = []
+        const groupedEvents: VersionEvents = {}
         resp.rows.forEach(row => {
           const partialId = row.key.pop()
           if (partialId === undefined) {
             return
           }
-          groupedEvents.push({
-            partialId,
-            ...(row.value as Partial<EventGroup>),
-          })
+          const value = row.value as EventGroup
+          value.partialId = partialId
+          groupedEvents[value.version] ??= []
+          groupedEvents[value.version].push(value)
         })
-        groupedEvents.sort(sortEventGroups)
+        // groupedEvents.sort(sortEventGroups)
         setEvents(groupedEvents)
       })
   }, [CouchdbManager, dbName, designDoc, params])
@@ -426,10 +178,12 @@ function Page() {
               </div>
             </Grid>
           </TabPanel>
-          <TabPanel></TabPanel>
+          <TabPanel>
+            <VersionsView events={events} />
+          </TabPanel>
           <TabPanel>
             <Card className="mt-6">
-              <EventsView events={events} />
+              <EventsView events={Object.values(events).flat()} />
             </Card>
           </TabPanel>
           <TabPanel>

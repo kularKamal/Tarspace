@@ -49,8 +49,13 @@ type SingleEvent = {
   timestamp: string
 }
 
+export type EventType = "build" | "publish"
+
 export type EventGroup = {
   partialId: string
+  type: EventType
+  version: string
+  repository: string
   start?: SingleEvent
   stop?: SingleEvent
   success?: SingleEvent
