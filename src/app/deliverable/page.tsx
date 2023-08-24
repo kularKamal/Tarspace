@@ -28,9 +28,6 @@ import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, StageInfoMap } from "types"
 import { isStageName } from "utils"
 
-const ChevronIcon = () => <IconChevronRight height={18} />
-const DownloadIcon = () => <IconCloudDownload size={32} />
-
 function Page() {
   const location = useLocation()
   const crumbs: BreadcrumbsElement[] = [
@@ -96,7 +93,6 @@ function Page() {
           groupedEvents[value.version] ??= []
           groupedEvents[value.version].push(value)
         })
-        // groupedEvents.sort(sortEventGroups)
         setEvents(groupedEvents)
       })
   }, [CouchdbManager, dbName, designDoc, params])

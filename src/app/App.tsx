@@ -106,7 +106,7 @@ function App() {
   async function fetchDeliverables() {
     CouchdbManager.db(dbName)
       .design(designDoc)
-      .view("events-build", {
+      .view("deliverables", {
         group_level: 3,
         reduce: true,
       })

@@ -30,23 +30,25 @@ const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading 
     Content = (
       <>
         {results.map((result, index, array) => (
-          <>
-            <Link to={`/deliverables/${result.project.replace("@", "/")}/${result.name}`} key={result.slug + index}>
-              <Grid numItems={5} className="gap-4" key={result.slug}>
-                <Col numColSpan={2}>
-                  <Flex flexDirection="col" alignItems="start">
-                    <Title>{result.name}</Title>
-                    <Text>{result.project}</Text>
-                  </Flex>
-                </Col>
-                <Col numColSpan={3}>
-                  <Text>Repo: {result.repository}</Text>
-                  <Text>Artifacts: {result.artifacts.join(", ")}</Text>
-                </Col>
-              </Grid>
-            </Link>
+          <Link
+            to={`/deliverables/${result.project.split("@").reverse().join("/")}/${result.name}`}
+            key={result.slug + index}
+            rel="noopener noreferrer"
+          >
+            <Grid numItems={5} className="gap-4">
+              <Col numColSpan={2}>
+                <Flex flexDirection="col" alignItems="start">
+                  <Title>{result.name}</Title>
+                  <Text>{result.project}</Text>
+                </Flex>
+              </Col>
+              <Col numColSpan={3}>
+                <Text>Repo: {result.repository}</Text>
+                <Text>Artifacts: {result.artifacts.join(", ")}</Text>
+              </Col>
+            </Grid>
             {index === array.length - 1 ? null : <Divider />}
-          </>
+          </Link>
         ))}
       </>
     )
@@ -114,11 +116,13 @@ export const Search: FC = () => {
       })
       .then(resp => {
         const map: Record<string, SearcheableDeliverable> = {}
-        resp.rows.forEach(row => {
-          const value = row.value as SearcheableDeliverable
-          const path = value.slug
-          map[path] = value
-        })
+        resp.rows
+          // .filter(row => row.value !== undefined)
+          .forEach(row => {
+            const value = row.value as SearcheableDeliverable
+            const path = value.slug
+            map[path] = value
+          })
         setDeliverables(map)
         setLoading(false)
       })
