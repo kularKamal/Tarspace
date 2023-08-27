@@ -3,11 +3,10 @@ import { Button, Card, Col, Divider, Flex, Grid, Text, TextInput, Title } from "
 import { FC, useContext, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
-import { Spinner } from "components/Spinner"
-import { AppContext } from "contexts/AppContext"
-import { AuthContext } from "contexts/AuthContext"
+import { Spinner } from "components"
+import { AppContext, AuthContext } from "contexts"
 import { useClickAway, useDebounce, useIndexableData, useLunr, useQueryWildcards } from "hooks"
-import { DeliverableDoc } from "types/couchdb"
+import { DeliverableDoc } from "types"
 
 const SEARCH_FIELDS = ["name", "project", "artifacts", "repository"]
 type SearcheableKeys = "name" | "project" | "artifacts" | "repository"

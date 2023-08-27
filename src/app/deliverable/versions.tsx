@@ -35,7 +35,7 @@ export const VersionsView: FC<VersionViewProps> = ({ events }) => {
         .reverse()
         .map(([version, e]) => (
           <Grid numItems={7} key={version} className="mt-6 gap-6">
-            <Col numColSpan={1}>
+            <Col numColSpanMd={1}>
               <Flex flexDirection="col" alignItems="start" className="mt-6">
                 <Title>{version}</Title>
                 <Link to={urlJoin(e[0].repository, `./tree/v${version}`)} className="mt-2 ml-1">
@@ -45,7 +45,7 @@ export const VersionsView: FC<VersionViewProps> = ({ events }) => {
                 </Link>
               </Flex>
             </Col>
-            <Col numColSpan={6}>
+            <Col numColSpan={7} numColSpanMd={6}>
               <Card>
                 <EventsView events={e} />
               </Card>

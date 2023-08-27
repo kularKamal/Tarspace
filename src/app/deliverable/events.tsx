@@ -1,4 +1,4 @@
-import { Icon as TablerIcon, IconCalendar, IconClock, IconCubeSend, IconTool } from "@tabler/icons-react"
+import { IconCalendar, IconClock, IconCubeSend, IconTool, Icon as TablerIcon } from "@tabler/icons-react"
 import {
   Badge,
   Flex,
@@ -12,12 +12,18 @@ import {
   Text,
 } from "@tremor/react"
 import { DateTime, LocaleOptions } from "luxon"
-import { FC } from "react"
+import { FC, useRef } from "react"
 
 import { EventGroup, EventType } from "types"
 
 export type EventsViewProps = {
   events: EventGroup[]
+}
+
+export enum EventStateMessage {
+  IN_PROGRESS = "In progress",
+  SUCCESS = "Success",
+  FAILURE = "Failure",
 }
 
 export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
@@ -35,12 +41,12 @@ export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
 
   function getStateMessage(eventGroup: EventGroup) {
     if (!eventGroup.success && !eventGroup.failure) {
-      return "In progress"
+      return EventStateMessage.IN_PROGRESS
     }
     if (eventGroup.success) {
-      return "Success"
+      return EventStateMessage.SUCCESS
     }
-    return "Failure"
+    return EventStateMessage.FAILURE
   }
 
   function getStateColor(eventGroup: EventGroup) {
@@ -99,54 +105,56 @@ export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
       <TableHead>
         <TableRow>
           <TableHeaderCell>Partial ID</TableHeaderCell>
-          <TableHeaderCell>Operation</TableHeaderCell>
+          <TableHeaderCell className="text-center">Operation</TableHeaderCell>
           <TableHeaderCell>Start</TableHeaderCell>
           <TableHeaderCell>End</TableHeaderCell>
           <TableHeaderCell>State</TableHeaderCell>
         </TableRow>
       </TableHead>
       <TableBody>
-        {props.events.sort(sortEventGroups).map((d, index) => (
-          <TableRow key={index}>
-            <TableCell className="max-w-[30vh]">
-              <Text className="overflow-hidden truncate">{d.partialId}</Text>
-            </TableCell>
-            <TableCell>
-              <Icon icon={OperationIcon[d.type]} tooltip={d.type} size="lg" />
-            </TableCell>
-            <TableCell>
-              <Flex justifyContent="start">
-                <IconCalendar className="mr-5" />
-                <Text>{formatTimestamp(d.start?.timestamp)}</Text>
-              </Flex>
-              <Flex justifyContent="start">
-                <IconClock className="mr-5" />
-                <Text>{formatTimestamp(d.start?.timestamp, DateTime.TIME_SIMPLE)}</Text>
-              </Flex>
-            </TableCell>
-            <TableCell>
-              {d.failure || d.success ? (
-                <>
-                  <Flex justifyContent="start">
-                    <IconCalendar className="mr-5" />
-                    <Text>
-                      {d.failure ? formatTimestamp(d.failure?.timestamp) : formatTimestamp(d.success?.timestamp)}
-                    </Text>
-                  </Flex>
-                  <Flex justifyContent="start">
-                    <IconClock className="mr-5" />
-                    <Text>{getFormattedTime(d) || "In progress"}</Text>
-                  </Flex>
-                </>
-              ) : (
-                <Text>-</Text>
-              )}
-            </TableCell>
-            <TableCell>
-              <Badge size="xl" color={getStateColor(d)}>
-                {getStateMessage(d)}
-              </Badge>
-            </TableCell>
+        {props.events.sort(sortEventGroups).map(d => (
+          <TableRow key={d.partialId}>
+            <>
+              <TableCell className="max-w-[30vh]">
+                <Text className="overflow-hidden truncate">{d.partialId}</Text>
+              </TableCell>
+              <TableCell className="text-center">
+                <Icon icon={OperationIcon[d.type]} tooltip={d.type} size="lg" />
+              </TableCell>
+              <TableCell>
+                <Flex justifyContent="start">
+                  <IconCalendar className="mr-2" />
+                  <Text>{formatTimestamp(d.start?.timestamp)}</Text>
+                </Flex>
+                <Flex justifyContent="start">
+                  <IconClock className="mr-2" />
+                  <Text>{formatTimestamp(d.start?.timestamp, DateTime.TIME_SIMPLE)}</Text>
+                </Flex>
+              </TableCell>
+              <TableCell>
+                {d.failure || d.success ? (
+                  <>
+                    <Flex justifyContent="start">
+                      <IconCalendar className="mr-2" />
+                      <Text>
+                        {d.failure ? formatTimestamp(d.failure?.timestamp) : formatTimestamp(d.success?.timestamp)}
+                      </Text>
+                    </Flex>
+                    <Flex justifyContent="start">
+                      <IconClock className="mr-2" />
+                      <Text>{getFormattedTime(d) || "In progress"}</Text>
+                    </Flex>
+                  </>
+                ) : (
+                  <Text>-</Text>
+                )}
+              </TableCell>
+              <TableCell>
+                <Badge size="xl" color={getStateColor(d)}>
+                  {getStateMessage(d)}
+                </Badge>
+              </TableCell>
+            </>
           </TableRow>
         ))}
       </TableBody>

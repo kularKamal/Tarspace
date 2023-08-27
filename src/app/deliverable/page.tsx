@@ -1,14 +1,21 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
-import { IconBrandGithub, IconChevronRight, IconCloudDownload, IconExternalLink } from "@tabler/icons-react"
+import { IconBrandGithub, IconExternalLink } from "@tabler/icons-react"
 import {
+  Accordion,
+  AccordionBody,
+  AccordionHeader,
   Button,
   Card,
+  DateRangePicker,
+  DateRangePickerValue,
   Flex,
   Grid,
   Icon,
   List,
   ListItem,
   Metric,
+  MultiSelect,
+  MultiSelectItem,
   Tab,
   TabGroup,
   TabList,
@@ -18,15 +25,35 @@ import {
   Title,
 } from "@tremor/react"
 import { DateTime } from "luxon"
-import { useContext, useEffect, useState } from "react"
+import { PropsWithChildren, useContext, useEffect, useState } from "react"
+import { useTabs, TabPanel as HeadlessTab } from "react-headless-tabs"
 import { Link, useLocation, useParams } from "react-router-dom"
 
-import { EventsView } from "app/deliverable/events"
+import { EventStateMessage, EventsView } from "app/deliverable/events"
 import { VersionEvents, VersionsView } from "app/deliverable/versions"
-import { Breadcrumbs, BreadcrumbsElement } from "components"
+import { ArtifactCard, Breadcrumbs, BreadcrumbsElement } from "components"
 import { AppContext, AuthContext } from "contexts"
-import { EventDoc, EventGroup, StageInfoMap } from "types"
+import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
 import { isStageName } from "utils"
+
+enum Tabs {
+  DETAILS = "Details",
+  VERSIONS = "Versions",
+  EVENTS = "Events",
+  ARTIFACTS = "Artifacts",
+}
+
+type StatusFilter = {
+  [key in EventStateMessage]?: boolean
+}
+
+function CustomTabPanel<T extends string>(props: { name: string; currentTab?: T | null } & PropsWithChildren) {
+  return (
+    <TabPanel>
+      <HeadlessTab hidden={props.name !== props.currentTab}>{props.children}</HeadlessTab>
+    </TabPanel>
+  )
+}
 
 function Page() {
   const location = useLocation()
@@ -46,7 +73,10 @@ function Page() {
   const designDoc = username as string
 
   const [events, setEvents] = useState<VersionEvents>({})
+  const [eventsList, setEventsList] = useState<EventGroup[]>([])
   const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
+
+  const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), Tabs.DETAILS)
 
   useEffect(() => {
     CouchdbManager.db(dbName)
@@ -83,17 +113,20 @@ function Page() {
       })
       .then(resp => {
         const groupedEvents: VersionEvents = {}
+        const eventsList: EventGroup[] = []
         resp.rows.forEach(row => {
           const partialId = row.key.pop()
           if (partialId === undefined) {
             return
           }
           const value = row.value as EventGroup
+          eventsList.push(value)
           value.partialId = partialId
           groupedEvents[value.version] ??= []
           groupedEvents[value.version].push(value)
         })
         setEvents(groupedEvents)
+        setEventsList(eventsList)
       })
   }, [CouchdbManager, dbName, designDoc, params])
 
@@ -109,13 +142,14 @@ function Page() {
 
       <TabGroup className="mt-6">
         <TabList variant="line">
-          <Tab id="details">Details</Tab>
-          <Tab>Versions</Tab>
-          <Tab>Events</Tab>
-          <Tab>Artifacts</Tab>
+          {Object.entries(Tabs).map(([k, v]) => (
+            <Tab key={k} onClick={() => setSelectedTab(v)}>
+              {v}
+            </Tab>
+          ))}
         </TabList>
         <TabPanels>
-          <TabPanel>
+          <CustomTabPanel name={Tabs.DETAILS} currentTab={selectedTab}>
             <Grid
               numItemsMd={2}
               numItemsLg={Math.min(3, Object.entries(lastPublishedVersions).length)}
@@ -149,10 +183,10 @@ function Page() {
                 </Card>
               ))}
             </Grid>
-            <Grid numItems={2} className="gap-6">
+            <Grid numItemsMd={2} className="gap-6">
               <div className="mt-6">
                 <Card>
-                  <Icon icon={IconBrandGithub} variant="light" size="xl" color="blue" />
+                  <Icon icon={IconBrandGithub} variant="light" size="lg" color="blue" />
                   <Title className="mt-6">Repository</Title>
                   <Text className="mt-2">The source code for this deliverable can be found at the following link.</Text>
                   <Flex className="mt-6 pt-4 border-t">
@@ -173,17 +207,15 @@ function Page() {
                 </Card>
               </div>
             </Grid>
-          </TabPanel>
-          <TabPanel>
+          </CustomTabPanel>
+          <CustomTabPanel name={Tabs.VERSIONS} currentTab={selectedTab}>
             <VersionsView events={events} />
-          </TabPanel>
-          <TabPanel>
-            <Card className="mt-6">
-              <EventsView events={Object.values(events).flat()} />
-            </Card>
-          </TabPanel>
-          <TabPanel>
-            {/* <Grid numItemsMd={3} className="gap-4 mt-6">
+          </CustomTabPanel>
+          <CustomTabPanel name={Tabs.EVENTS} currentTab={selectedTab}>
+            <EventsPanel eventsList={eventsList} />
+          </CustomTabPanel>
+          <CustomTabPanel name={Tabs.ARTIFACTS} currentTab={selectedTab}>
+            <Grid numItemsMd={3} className="gap-4 mt-6">
               <ArtifactCard />
               <ArtifactCard />
               <ArtifactCard />
@@ -192,9 +224,8 @@ function Page() {
               <ArtifactCard />
               <ArtifactCard />
               <ArtifactCard />
-            </Grid> */}
-            {/* <ArtifactsTable /> */}
-          </TabPanel>
+            </Grid>
+          </CustomTabPanel>
         </TabPanels>
       </TabGroup>
     </>
@@ -202,3 +233,71 @@ function Page() {
 }
 
 export default Page
+
+type EventsPanelProps = {
+  eventsList: EventGroup[]
+}
+const EventsPanel = ({ eventsList }: EventsPanelProps) => {
+  const [startRange, setStartRange] = useState<DateRangePickerValue>({
+    from: new Date(0),
+    to: new Date(),
+  })
+  const [endRange, setEndRange] = useState<DateRangePickerValue>({
+    from: new Date(0),
+    to: new Date(),
+  })
+  const [statusFilters, setStatusFilter] = useState<StatusFilter>({})
+
+  // const visibleEvents = useMemo(
+  //   () =>
+  //     eventsList.filter(e => isEventInRange(startRange, e.start) && isEventInRange(endRange, e.failure || e.success)),
+  //   [eventsList, startRange, endRange]
+  // )
+  const visibleEvents = eventsList.filter(
+    e => isEventInRange(startRange, e.start) && isEventInRange(endRange, e.failure || e.success)
+  )
+
+  function isEventInRange(range: DateRangePickerValue, e?: SingleEvent) {
+    if (!e) {
+      return true
+    }
+
+    const from = DateTime.fromJSDate(range.from ?? new Date(0))
+    const to = DateTime.fromJSDate(range.to ?? new Date())
+    const dt = DateTime.fromISO(e.timestamp)
+
+    return from < dt && dt < to
+  }
+
+  return (
+    <Card className="mt-6">
+      <Flex className="space-x-4" justifyContent="start" alignItems="center">
+        <DateRangePicker placeholder="Select start dates" enableYearNavigation onValueChange={setStartRange} />
+        <MultiSelect
+          onValueChange={value => {
+            const statusFilter = (value as EventStateMessage[]).reduce((acc, v) => {
+              acc[v] = true
+              return acc
+            }, {} as StatusFilter)
+            setStatusFilter(statusFilter)
+          }}
+        >
+          {Object.values(EventStateMessage).map(m => (
+            <MultiSelectItem key={m} value={m} />
+          ))}
+        </MultiSelect>
+      </Flex>
+      <Accordion className="w-full p-0 mt-4 mb-4 border-none overflow-visible w-fit">
+        <AccordionHeader className="px-2 pt-0 flex-row-reverse w-fit">
+          <Flex>
+            <Text className="text-left ml-4 mb-0.5">Advanced search</Text>
+          </Flex>
+        </AccordionHeader>
+        <AccordionBody className="px-0">
+          <DateRangePicker placeholder="Select end dates" enableYearNavigation onValueChange={setEndRange} />
+        </AccordionBody>
+      </Accordion>
+      <EventsView events={visibleEvents} />
+    </Card>
+  )
+}

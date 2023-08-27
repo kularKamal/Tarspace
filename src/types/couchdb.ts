@@ -44,7 +44,7 @@ export type EventDoc = CouchdbDoc & {
   target: string
 }
 
-type SingleEvent = {
+export type SingleEvent = {
   id: string
   timestamp: string
 }
