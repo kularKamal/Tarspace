@@ -27,7 +27,7 @@ import {
 import { DateTime } from "luxon"
 import { PropsWithChildren, useContext, useEffect, useState } from "react"
 import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { EventStateMessage, EventsView } from "app/deliverable/events"
 import { VersionEvents, VersionsView } from "app/deliverable/versions"
@@ -40,7 +40,7 @@ enum Tabs {
   DETAILS = "details",
   VERSIONS = "versions",
   EVENTS = "events",
-  ARTIFACTS = "artifacts",
+  FILES = "files",
 }
 
 type StatusFilter = {
@@ -56,7 +56,7 @@ function CustomTabPanel<T extends string>(props: { name: string; currentTab?: T 
 }
 
 function Page() {
-  const params = useParams()
+  const { customer, project, deliverable, tab } = useParams()
   const navigate = useNavigate()
 
   const { CouchdbManager } = useContext(AppContext)
@@ -69,7 +69,7 @@ function Page() {
   const [eventsList, setEventsList] = useState<EventGroup[]>([])
   const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
 
-  const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), params.tab ?? Tabs.DETAILS)
+  const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), tab ?? Tabs.DETAILS)
 
   useEffect(() => {
     CouchdbManager.db(dbName)
@@ -77,8 +77,8 @@ function Page() {
       .view<(string | undefined)[], EventDoc>("latest-published-version", {
         reduce: false,
         include_docs: true,
-        start_key: [params.customer, params.project, params.deliverable],
-        end_key: [params.customer, params.project, params.deliverable, "\uffff"],
+        start_key: [customer, project, deliverable],
+        end_key: [customer, project, deliverable, "\uffff"],
       })
       .then(resp => {
         const map: StageInfoMap = {}
@@ -101,8 +101,8 @@ function Page() {
       .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
         reduce: true,
         group: true,
-        start_key: [params.customer, params.project, params.deliverable],
-        end_key: [params.customer, params.project, params.deliverable, "\uffff"],
+        start_key: [customer, project, deliverable],
+        end_key: [customer, project, deliverable, "\uffff"],
       })
       .then(resp => {
         const groupedEvents: VersionEvents = {}
@@ -121,22 +121,22 @@ function Page() {
         setEvents(groupedEvents)
         setEventsList(eventsList)
       })
-  }, [CouchdbManager, dbName, designDoc, params])
+  }, [CouchdbManager, customer, dbName, deliverable, designDoc, project])
 
   return (
     <>
       <Flex>
         <div>
           <Metric className="text-left">Deliverable</Metric>
-          <Text className="text-left">{params.deliverable}</Text>
+          <Text className="text-left">{deliverable}</Text>
         </div>
-        <Breadcrumbs ignoreLast={params.tab !== undefined} />
+        <Breadcrumbs ignoreLast={tab !== undefined} />
       </Flex>
 
       <TabGroup
         className="mt-6"
         defaultIndex={Math.max(
-          Object.values(Tabs).findIndex(t => t === params.tab),
+          Object.values(Tabs).findIndex(t => t === tab),
           0
         )}
       >
@@ -219,7 +219,7 @@ function Page() {
           <CustomTabPanel name={Tabs.EVENTS} currentTab={selectedTab}>
             <EventsPanel eventsList={eventsList} />
           </CustomTabPanel>
-          <CustomTabPanel name={Tabs.ARTIFACTS} currentTab={selectedTab}>
+          <CustomTabPanel name={Tabs.FILES} currentTab={selectedTab}>
             <Grid numItemsMd={3} className="gap-4 mt-6">
               <ArtifactCard />
               <ArtifactCard />
