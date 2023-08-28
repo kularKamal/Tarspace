@@ -137,7 +137,7 @@ function Page() {
           <Metric className="text-left">Deliverable</Metric>
           <Text className="text-left">{params.deliverable}</Text>
         </div>
-        <Breadcrumbs crumbs={crumbs} />
+        <Breadcrumbs />
       </Flex>
 
       <TabGroup className="mt-6">

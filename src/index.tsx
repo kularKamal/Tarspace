@@ -27,6 +27,8 @@ const router = createHashRouter(
       >
         <Route path="" element={<App />} />
         <Route path="deliverables">
+          <Route path=":customer" element={<App />} />
+          <Route path=":customer/:project" element={<App />} />
           <Route path=":customer/:project/:deliverable" element={<Deliverable />} />
         </Route>
       </Route>

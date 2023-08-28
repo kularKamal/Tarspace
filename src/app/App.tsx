@@ -17,8 +17,8 @@ import {
   TableRow,
   Text,
 } from "@tremor/react"
-import { useContext, useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { useContext, useEffect, useMemo, useState } from "react"
+import { Link, useParams } from "react-router-dom"
 
 import { AppContext, AuthContext } from "contexts"
 import "./App.css"
@@ -65,24 +65,48 @@ const EmptyView = () => (
 
 function App() {
   const { CouchdbManager } = useContext(AppContext)
-  const { username } = useContext(AuthContext)
+  const { username, userDb } = useContext(AuthContext)
 
-  const dbName = "userdb-" + Buffer.from(username as string).toString("hex")
   const designDoc = username as string
   // if (userCtx !== undefined && userCtx.roles.includes("_admin")) {
   //   dbName = "companylog-ia6ch3s4"
   //   designDoc = "companylog"
   // }
 
+  const { project, customer } = useParams()
+
   const [deliverables, setDeliverables] = useState<string[][]>([])
   const [projects, setProjects] = useState<string[][]>([])
   const [customers, setCustomers] = useState<string[]>([])
 
-  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null)
-  const [selectedProject, setSelectedProject] = useState<string | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(customer ?? null)
+  const [selectedProject, setSelectedProject] = useState<string | null>(project ?? null)
 
   useEffect(() => {
-    CouchdbManager.db(dbName)
+    if (!userDb) {
+      return
+    }
+
+    if (!(project && customer) && !(selectedProject && selectedCustomer)) {
+      return
+    }
+
+    CouchdbManager.db(userDb)
+      .design(designDoc)
+      .view("deliverables", {
+        group_level: 3,
+        reduce: true,
+      })
+      .then(resp => {
+        setDeliverables(resp.rows.map(row => row.key as string[]))
+      })
+  }, [userDb, CouchdbManager, designDoc, project, customer, selectedCustomer, selectedProject])
+
+  useEffect(() => {
+    if (!userDb) {
+      return
+    }
+    CouchdbManager.db(userDb)
       .design(designDoc)
       .view("events-build", {
         group_level: 2,
@@ -93,27 +117,15 @@ function App() {
         const customers = Array.from(new Set(projects.map(key => key[0])))
         setProjects(projects)
         setCustomers(customers)
-        if (customers.length === 1) {
+        if (customers.length === 1 && !customer) {
           setSelectedCustomer(customers[0])
         }
       })
-  }, [dbName, CouchdbManager, designDoc])
+  }, [userDb, CouchdbManager, designDoc, project, customer])
 
   const shownDeliverables = deliverables
     .filter(key => key[0] === selectedCustomer && key[1] === selectedProject)
     .map(key => key[2])
-
-  async function fetchDeliverables() {
-    CouchdbManager.db(dbName)
-      .design(designDoc)
-      .view("deliverables", {
-        group_level: 3,
-        reduce: true,
-      })
-      .then(resp => {
-        setDeliverables(resp.rows.map(row => row.key as string[]))
-      })
-  }
 
   return (
     <>
@@ -160,7 +172,7 @@ function App() {
             value={selectedProject || ""}
             onValueChange={value => {
               setSelectedProject(value)
-              fetchDeliverables()
+              // fetchDeliverables()
             }}
             placeholder="Project"
             className="max-w-xs"
