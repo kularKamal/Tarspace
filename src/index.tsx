@@ -30,6 +30,7 @@ const router = createHashRouter(
           <Route path=":customer" element={<App />} />
           <Route path=":customer/:project" element={<App />} />
           <Route path=":customer/:project/:deliverable" element={<Deliverable />} />
+          <Route path=":customer/:project/:deliverable/:tab" element={<Deliverable />} />
         </Route>
       </Route>
     </>

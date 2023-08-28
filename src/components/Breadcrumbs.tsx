@@ -25,7 +25,13 @@ const IconHome = () => (
   </svg>
 )
 
-export const Breadcrumbs = (props: { crumbs?: BreadcrumbsElement[]; className?: string }) => {
+type BreadcrumbsProps = {
+  crumbs?: BreadcrumbsElement[]
+  className?: string
+  ignoreLast?: boolean
+}
+
+export const Breadcrumbs = (props: BreadcrumbsProps) => {
   const location = useLocation()
 
   const crumbs: BreadcrumbsElement[] =
@@ -44,6 +50,10 @@ export const Breadcrumbs = (props: { crumbs?: BreadcrumbsElement[]; className?: 
         } as BreadcrumbsElement
       })
       .filter((crumb): crumb is BreadcrumbsElement => crumb !== null && crumb !== undefined)
+
+  if (props.ignoreLast) {
+    crumbs.pop()
+  }
 
   const last_crumb = crumbs.at(-1)
 

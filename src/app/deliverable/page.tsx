@@ -26,21 +26,21 @@ import {
 } from "@tremor/react"
 import { DateTime } from "luxon"
 import { PropsWithChildren, useContext, useEffect, useState } from "react"
-import { useTabs, TabPanel as HeadlessTab } from "react-headless-tabs"
-import { Link, useLocation, useParams } from "react-router-dom"
+import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
+import { Link, useParams } from "react-router-dom"
 
 import { EventStateMessage, EventsView } from "app/deliverable/events"
 import { VersionEvents, VersionsView } from "app/deliverable/versions"
-import { ArtifactCard, Breadcrumbs, BreadcrumbsElement } from "components"
+import { ArtifactCard, Breadcrumbs } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
-import { isStageName } from "utils"
+import { isStageName, titlecase } from "utils"
 
 enum Tabs {
-  DETAILS = "Details",
-  VERSIONS = "Versions",
-  EVENTS = "Events",
-  ARTIFACTS = "Artifacts",
+  DETAILS = "details",
+  VERSIONS = "versions",
+  EVENTS = "events",
+  ARTIFACTS = "artifacts",
 }
 
 type StatusFilter = {
@@ -56,14 +56,6 @@ function CustomTabPanel<T extends string>(props: { name: string; currentTab?: T 
 }
 
 function Page() {
-  const location = useLocation()
-  const crumbs: BreadcrumbsElement[] = [
-    {
-      name: location.pathname.split("/").pop() as string,
-      route: location.pathname,
-    },
-  ]
-
   const params = useParams()
 
   const { CouchdbManager } = useContext(AppContext)
@@ -76,7 +68,7 @@ function Page() {
   const [eventsList, setEventsList] = useState<EventGroup[]>([])
   const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
 
-  const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), Tabs.DETAILS)
+  const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), params.tab ?? Tabs.DETAILS)
 
   useEffect(() => {
     CouchdbManager.db(dbName)
@@ -137,14 +129,14 @@ function Page() {
           <Metric className="text-left">Deliverable</Metric>
           <Text className="text-left">{params.deliverable}</Text>
         </div>
-        <Breadcrumbs />
+        <Breadcrumbs ignoreLast={params.tab !== undefined} />
       </Flex>
 
-      <TabGroup className="mt-6">
+      <TabGroup className="mt-6" defaultIndex={Object.values(Tabs).findIndex(t => t === params.tab) || 1}>
         <TabList variant="line">
           {Object.entries(Tabs).map(([k, v]) => (
             <Tab key={k} onClick={() => setSelectedTab(v)}>
-              {v}
+              {titlecase(v)}
             </Tab>
           ))}
         </TabList>
