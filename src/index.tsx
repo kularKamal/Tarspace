@@ -1,7 +1,7 @@
 import { Logger } from "@iotinga/ts-backpack-common"
 import React from "react"
 import ReactDOM from "react-dom/client"
-import { Route, RouterProvider, createHashRouter, createRoutesFromElements } from "react-router-dom"
+import { Navigate, Route, RouterProvider, createHashRouter, createRoutesFromElements } from "react-router-dom"
 
 import App from "app/App"
 import { Deliverable } from "app/deliverable/index"
@@ -29,7 +29,7 @@ const router = createHashRouter(
         <Route path="deliverables">
           <Route path=":customer" element={<App />} />
           <Route path=":customer/:project" element={<App />} />
-          <Route path=":customer/:project/:deliverable" element={<Deliverable />} />
+          <Route path=":customer/:project/:deliverable" element={<Navigate to="details" />} />
           <Route path=":customer/:project/:deliverable/:tab" element={<Deliverable />} />
         </Route>
       </Route>

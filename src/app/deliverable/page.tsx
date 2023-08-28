@@ -57,6 +57,7 @@ function CustomTabPanel<T extends string>(props: { name: string; currentTab?: T 
 
 function Page() {
   const params = useParams()
+  const navigate = useNavigate()
 
   const { CouchdbManager } = useContext(AppContext)
   const { username } = useContext(AuthContext)
@@ -122,10 +123,6 @@ function Page() {
       })
   }, [CouchdbManager, dbName, designDoc, params])
 
-  const location = useLocation()
-  const navigate = useNavigate()
-  const rootUrl = location.pathname.substring(0, location.pathname.lastIndexOf("/"))
-
   return (
     <>
       <Flex>
@@ -136,14 +133,20 @@ function Page() {
         <Breadcrumbs ignoreLast={params.tab !== undefined} />
       </Flex>
 
-      <TabGroup className="mt-6" defaultIndex={Object.values(Tabs).findIndex(t => t === params.tab) || 0}>
+      <TabGroup
+        className="mt-6"
+        defaultIndex={Math.max(
+          Object.values(Tabs).findIndex(t => t === params.tab),
+          0
+        )}
+      >
         <TabList variant="line">
           {Object.entries(Tabs).map(([key, tabName]) => (
             <Tab
               key={key}
               onClick={() => {
                 setSelectedTab(tabName)
-                navigate([rootUrl, tabName].join("/"))
+                navigate(`../${tabName}`, { relative: "path" })
               }}
             >
               {titlecase(tabName)}
@@ -250,11 +253,6 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
   })
   const [statusFilters, setStatusFilter] = useState<StatusFilter>({})
 
-  // const visibleEvents = useMemo(
-  //   () =>
-  //     eventsList.filter(e => isEventInRange(startRange, e.start) && isEventInRange(endRange, e.failure || e.success)),
-  //   [eventsList, startRange, endRange]
-  // )
   const visibleEvents = eventsList.filter(
     e => isEventInRange(startRange, e.start) && isEventInRange(endRange, e.failure || e.success)
   )
