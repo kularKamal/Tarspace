@@ -27,7 +27,7 @@ import {
 import { DateTime } from "luxon"
 import { PropsWithChildren, useContext, useEffect, useState } from "react"
 import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
-import { Link, useParams } from "react-router-dom"
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 
 import { EventStateMessage, EventsView } from "app/deliverable/events"
 import { VersionEvents, VersionsView } from "app/deliverable/versions"
@@ -122,6 +122,10 @@ function Page() {
       })
   }, [CouchdbManager, dbName, designDoc, params])
 
+  const location = useLocation()
+  const navigate = useNavigate()
+  const rootUrl = location.pathname.substring(0, location.pathname.lastIndexOf("/"))
+
   return (
     <>
       <Flex>
@@ -132,11 +136,17 @@ function Page() {
         <Breadcrumbs ignoreLast={params.tab !== undefined} />
       </Flex>
 
-      <TabGroup className="mt-6" defaultIndex={Object.values(Tabs).findIndex(t => t === params.tab) || 1}>
+      <TabGroup className="mt-6" defaultIndex={Object.values(Tabs).findIndex(t => t === params.tab) || 0}>
         <TabList variant="line">
-          {Object.entries(Tabs).map(([k, v]) => (
-            <Tab key={k} onClick={() => setSelectedTab(v)}>
-              {titlecase(v)}
+          {Object.entries(Tabs).map(([key, tabName]) => (
+            <Tab
+              key={key}
+              onClick={() => {
+                setSelectedTab(tabName)
+                navigate([rootUrl, tabName].join("/"))
+              }}
+            >
+              {titlecase(tabName)}
             </Tab>
           ))}
         </TabList>
