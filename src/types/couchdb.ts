@@ -56,6 +56,7 @@ export type EventGroup = {
   type: EventType
   version: string
   repository: string
+  stage?: string | null
   start?: SingleEvent
   stop?: SingleEvent
   success?: SingleEvent

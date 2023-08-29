@@ -10,6 +10,7 @@ import { Login } from "app/login/index"
 import { ProtectedRoute } from "components/ProtectedRoute"
 import { AppContextProvider, AuthContextProvider } from "contexts"
 import "./index.css"
+import { NotFoundPage } from "components/NotFound"
 
 const logger = new Logger("App")
 
@@ -33,6 +34,7 @@ const router = createHashRouter(
           <Route path=":customer/:project/:deliverable/:tab" element={<Deliverable />} />
         </Route>
       </Route>
+      <Route path="*" element={<NotFoundPage />}></Route>
     </>
   )
 )

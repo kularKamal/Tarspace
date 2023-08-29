@@ -15,6 +15,7 @@ import { DateTime, LocaleOptions } from "luxon"
 import { FC, memo } from "react"
 
 import { EventGroup, EventType } from "types"
+import { titlecase } from "utils"
 
 export type EventsViewProps = {
   events: EventGroup[]
@@ -36,6 +37,9 @@ const EventRow: FC<{ event: EventGroup }> = memo(({ event }) => (
     <>
       <TableCell className="max-w-[30vh]">
         <Text className="overflow-hidden truncate">{event.partialId}</Text>
+      </TableCell>
+      <TableCell>
+        <Text>{event.stage ? titlecase(event.stage) : "-"}</Text>
       </TableCell>
       <TableCell className="text-center">
         <Icon icon={OPERATION_ICONS[event.type]} tooltip={event.type} size="lg" />
@@ -83,6 +87,7 @@ export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
       <TableHead>
         <TableRow>
           <TableHeaderCell>Partial ID</TableHeaderCell>
+          <TableHeaderCell>Stage</TableHeaderCell>
           <TableHeaderCell className="text-center">Operation</TableHeaderCell>
           <TableHeaderCell>Start</TableHeaderCell>
           <TableHeaderCell>End</TableHeaderCell>

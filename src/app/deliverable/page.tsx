@@ -1,18 +1,12 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
-import { IconBrandGithub, IconExternalLink } from "@tabler/icons-react"
 import {
   Accordion,
   AccordionBody,
   AccordionHeader,
-  Button,
   Card,
   DateRangePicker,
   DateRangePickerValue,
   Flex,
-  Grid,
-  Icon,
-  List,
-  ListItem,
   Metric,
   MultiSelect,
   MultiSelectItem,
@@ -27,14 +21,16 @@ import {
 import { DateTime } from "luxon"
 import { PropsWithChildren, useContext, useEffect, useState } from "react"
 import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
+import { DetailsView } from "app/deliverable/details"
 import { EventStateMessage, EventsView } from "app/deliverable/events"
 import { VersionEvents, VersionsView } from "app/deliverable/versions"
-import { ArtifactCard, Breadcrumbs } from "components"
+import { Breadcrumbs } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
 import { isStageName, titlecase } from "utils"
+import { FilesView } from "./files"
 
 enum Tabs {
   DETAILS = "details",
@@ -65,37 +61,13 @@ function Page() {
   const dbName = "userdb-" + Buffer.from(username as string).toString("hex")
   const designDoc = username as string
 
+  const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
   const [events, setEvents] = useState<VersionEvents>({})
   const [eventsList, setEventsList] = useState<EventGroup[]>([])
-  const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
 
   const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), tab ?? Tabs.DETAILS)
 
   useEffect(() => {
-    CouchdbManager.db(dbName)
-      .design(designDoc)
-      .view<(string | undefined)[], EventDoc>("latest-published-version", {
-        reduce: false,
-        include_docs: true,
-        start_key: [customer, project, deliverable],
-        end_key: [customer, project, deliverable, "\uffff"],
-      })
-      .then(resp => {
-        const map: StageInfoMap = {}
-        resp.rows.forEach(row => {
-          const stageName = row.key.pop()
-          if (isStageName(stageName) && row.doc) {
-            map[stageName] = {
-              latestVersion: row.value as string,
-              timestamp: row.doc.timestamp,
-              configurationId: row.doc.config_id as string,
-              repository: row.doc.repository,
-            }
-          }
-        })
-        setLastPublishedVersions(map)
-      })
-
     CouchdbManager.db(dbName)
       .design(designDoc)
       .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
@@ -120,6 +92,30 @@ function Page() {
         })
         setEvents(groupedEvents)
         setEventsList(eventsList)
+      })
+
+    CouchdbManager.db(dbName)
+      .design(designDoc)
+      .view<(string | undefined)[], EventDoc>("latest-published-version", {
+        reduce: false,
+        include_docs: true,
+        start_key: [customer, project, deliverable],
+        end_key: [customer, project, deliverable, "\uffff"],
+      })
+      .then(resp => {
+        const map: StageInfoMap = {}
+        resp.rows.forEach(row => {
+          const stageName = row.key.pop()
+          if (isStageName(stageName) && row.doc) {
+            map[stageName] = {
+              latestVersion: row.value as string,
+              timestamp: row.doc.timestamp,
+              configurationId: row.doc.config_id as string,
+              repository: row.doc.repository,
+            }
+          }
+        })
+        setLastPublishedVersions(map)
       })
   }, [CouchdbManager, customer, dbName, deliverable, designDoc, project])
 
@@ -155,63 +151,7 @@ function Page() {
         </TabList>
         <TabPanels>
           <CustomTabPanel name={Tabs.DETAILS} currentTab={selectedTab}>
-            <Grid
-              numItemsMd={2}
-              numItemsLg={Math.min(3, Object.entries(lastPublishedVersions).length)}
-              className="gap-6 mt-6"
-            >
-              {Object.entries(lastPublishedVersions).map(([stageName, info]) => (
-                <Card key={stageName}>
-                  <Metric>{stageName}</Metric>
-                  <List className="mt-4">
-                    <ListItem>
-                      <Flex>
-                        <Text>Current installed version</Text>
-                        <Text>{info.latestVersion}</Text>
-                      </Flex>
-                    </ListItem>
-                    <ListItem>
-                      <Flex>
-                        <Text>Last update date</Text>
-                        <Text>{DateTime.fromISO(info.timestamp).toLocaleString()}</Text>
-                      </Flex>
-                    </ListItem>
-                    <ListItem>
-                      <Flex>
-                        <Text>Configuration</Text>
-                        <Link to="">
-                          <Text color="blue">LATEST</Text>
-                        </Link>
-                      </Flex>
-                    </ListItem>
-                  </List>
-                </Card>
-              ))}
-            </Grid>
-            <Grid numItemsMd={2} className="gap-6">
-              <div className="mt-6">
-                <Card>
-                  <Icon icon={IconBrandGithub} variant="light" size="lg" color="blue" />
-                  <Title className="mt-6">Repository</Title>
-                  <Text className="mt-2">The source code for this deliverable can be found at the following link.</Text>
-                  <Flex className="mt-6 pt-4 border-t">
-                    <Link
-                      to={
-                        (Object.values(lastPublishedVersions)[0] &&
-                          Object.values(lastPublishedVersions)[0].repository) ||
-                        "#"
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button size="xs" variant="light" icon={IconExternalLink} iconPosition="right">
-                        Visit
-                      </Button>
-                    </Link>
-                  </Flex>
-                </Card>
-              </div>
-            </Grid>
+            <DetailsView stages={lastPublishedVersions} />
           </CustomTabPanel>
           <CustomTabPanel name={Tabs.VERSIONS} currentTab={selectedTab}>
             <VersionsView events={events} />
@@ -220,16 +160,10 @@ function Page() {
             <EventsPanel eventsList={eventsList} />
           </CustomTabPanel>
           <CustomTabPanel name={Tabs.FILES} currentTab={selectedTab}>
-            <Grid numItemsMd={3} className="gap-4 mt-6">
-              <ArtifactCard />
-              <ArtifactCard />
-              <ArtifactCard />
-              <ArtifactCard />
-              <ArtifactCard />
-              <ArtifactCard />
-              <ArtifactCard />
-              <ArtifactCard />
-            </Grid>
+            <Card className="mt-6">
+              <Title className="mb-6">Production</Title>
+              <FilesView />
+            </Card>
           </CustomTabPanel>
         </TabPanels>
       </TabGroup>
