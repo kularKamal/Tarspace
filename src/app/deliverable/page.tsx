@@ -25,7 +25,7 @@ import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
 import { DetailsView } from "app/deliverable/details"
-import { EventStateMessage, EventsView } from "app/deliverable/events"
+import { EventState, EventStateBadges, EventStateMessages, EventsView } from "app/deliverable/events"
 import { VersionEvents, VersionsView } from "app/deliverable/versions"
 import { Breadcrumbs } from "components"
 import { AppContext, AuthContext } from "contexts"
@@ -38,11 +38,10 @@ enum Tabs {
   VERSIONS = "versions",
   EVENTS = "events",
   FILES = "files",
+  CONFIGURATION = "configuration",
 }
 
-type StatusFilter = {
-  [key in EventStateMessage]?: boolean
-}
+type StatusFilter = Partial<Record<EventState, boolean>>
 
 function CustomTabPanel<T extends string>(props: { name: string; currentTab?: T | null } & PropsWithChildren) {
   return (
@@ -178,6 +177,7 @@ function Page() {
                 ))
               : null}
           </CustomTabPanel>
+          <CustomTabPanel name={Tabs.CONFIGURATION} currentTab={selectedTab}></CustomTabPanel>
         </TabPanels>
       </TabGroup>
     </>
@@ -198,7 +198,13 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
     from: new Date(0),
     to: new Date(),
   })
-  const [statusFilters, setStatusFilter] = useState<StatusFilter>({})
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>({
+    failure: true,
+    inProgress: true,
+    timedOut: true,
+    success: true,
+  })
+  const [opFilter, setOpFilter] = useState()
 
   const visibleEvents = eventsList.filter(
     e => isEventInRange(startRange, e.start) && isEventInRange(endRange, e.failure || e.success)
@@ -219,18 +225,22 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
   return (
     <Card className="mt-6">
       <Flex className="space-x-4" justifyContent="start" alignItems="center">
-        <DateRangePicker placeholder="Select start dates" enableYearNavigation onValueChange={setStartRange} />
+        <DateRangePicker placeholder="Filter start dates..." enableYearNavigation onValueChange={setStartRange} />
         <MultiSelect
+          placeholder="Select status..."
+          defaultValue={Object.keys(statusFilter)}
           onValueChange={value => {
-            const statusFilter = (value as EventStateMessage[]).reduce((acc, v) => {
+            const statusFilter = (value as EventState[]).reduce((acc, v) => {
               acc[v] = true
               return acc
             }, {} as StatusFilter)
             setStatusFilter(statusFilter)
           }}
         >
-          {Object.values(EventStateMessage).map(m => (
-            <MultiSelectItem key={m} value={m} />
+          {Object.keys(EventStateMessages).map(eventState => (
+            <MultiSelectItem key={eventState} value={eventState}>
+              {EventStateBadges[eventState as EventState]}
+            </MultiSelectItem>
           ))}
         </MultiSelect>
       </Flex>
@@ -241,7 +251,7 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
           </Flex>
         </AccordionHeader>
         <AccordionBody className="px-0">
-          <DateRangePicker placeholder="Select end dates" enableYearNavigation onValueChange={setEndRange} />
+          <DateRangePicker placeholder="Filter end dates..." enableYearNavigation onValueChange={setEndRange} />
         </AccordionBody>
       </Accordion>
       <EventsView events={visibleEvents} />

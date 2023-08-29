@@ -1,6 +1,7 @@
 import { IconCalendar, IconClock, IconCubeSend, IconTool, Icon as TablerIcon } from "@tabler/icons-react"
 import {
   Badge,
+  BadgeProps,
   Flex,
   Icon,
   Table,
@@ -11,25 +12,61 @@ import {
   TableRow,
   Text,
 } from "@tremor/react"
+import { Configuration } from "config"
 import { DateTime, LocaleOptions } from "luxon"
-import { FC, memo } from "react"
+import { FC, RefAttributes, memo } from "react"
 
-import { EventGroup, EventType } from "types"
+import { EventGroup, EventOperation } from "types"
 import { titlecase } from "utils"
+
+export type EventState = "success" | "failure" | "inProgress" | "timedOut"
+
+export const EventStateMessages: Record<EventState, string> = {
+  inProgress: "In progress",
+  success: "Success",
+  failure: "Failure",
+  timedOut: "Timed out",
+}
+
+export const EventStateBadges: Record<EventState, JSX.Element> = {
+  success: BadgeFactory(EventStateMessages.success, { color: "emerald", size: "xl" }),
+  failure: BadgeFactory(EventStateMessages.failure, { color: "red", size: "xl" }),
+  inProgress: BadgeFactory(EventStateMessages.inProgress, { color: "yellow", size: "xl" }),
+  timedOut: BadgeFactory(EventStateMessages.timedOut, { color: "gray", size: "xl" }),
+}
+
+const OPERATION_ICONS: Record<EventOperation, TablerIcon> = {
+  build: IconTool,
+  publish: IconCubeSend,
+}
+
+function BadgeFactory(text: string, props: BadgeProps & RefAttributes<HTMLSpanElement>) {
+  return <Badge {...props}>{text}</Badge>
+}
 
 export type EventsViewProps = {
   events: EventGroup[]
 }
-
-export enum EventStateMessage {
-  IN_PROGRESS = "In progress",
-  SUCCESS = "Success",
-  FAILURE = "Failure",
-}
-
-const OPERATION_ICONS: Record<EventType, TablerIcon> = {
-  build: IconTool,
-  publish: IconCubeSend,
+export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
+  return (
+    <Table className="table-fixed">
+      <TableHead>
+        <TableRow>
+          <TableHeaderCell>Partial ID</TableHeaderCell>
+          <TableHeaderCell>Stage</TableHeaderCell>
+          <TableHeaderCell className="text-center">Operation</TableHeaderCell>
+          <TableHeaderCell>Start</TableHeaderCell>
+          <TableHeaderCell>End</TableHeaderCell>
+          <TableHeaderCell>State</TableHeaderCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {props.events.sort(sortEventGroupsByTime).map(d => (
+          <EventRow event={d} key={d.partialId} />
+        ))}
+      </TableBody>
+    </Table>
+  )
 }
 
 const EventRow: FC<{ event: EventGroup }> = memo(({ event }) => (
@@ -72,36 +109,10 @@ const EventRow: FC<{ event: EventGroup }> = memo(({ event }) => (
           <Text>-</Text>
         )}
       </TableCell>
-      <TableCell>
-        <Badge size="xl" color={getStateColor(event)}>
-          {getStateMessage(event)}
-        </Badge>
-      </TableCell>
+      <TableCell>{getBadge(event)}</TableCell>
     </>
   </TableRow>
 ))
-
-export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
-  return (
-    <Table className="table-fixed">
-      <TableHead>
-        <TableRow>
-          <TableHeaderCell>Partial ID</TableHeaderCell>
-          <TableHeaderCell>Stage</TableHeaderCell>
-          <TableHeaderCell className="text-center">Operation</TableHeaderCell>
-          <TableHeaderCell>Start</TableHeaderCell>
-          <TableHeaderCell>End</TableHeaderCell>
-          <TableHeaderCell>State</TableHeaderCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {props.events.sort(sortEventGroupsByTime).map(d => (
-          <EventRow event={d} key={d.partialId} />
-        ))}
-      </TableBody>
-    </Table>
-  )
-}
 
 export function formatTimestamp(
   timestamp?: string,
@@ -115,24 +126,18 @@ export function formatTimestamp(
   return DateTime.fromISO(timestamp).toLocaleString(formatOpts, opts)
 }
 
-function getStateMessage(eventGroup: EventGroup) {
+function getBadge(eventGroup: EventGroup) {
   if (!eventGroup.success && !eventGroup.failure) {
-    return EventStateMessage.IN_PROGRESS
+    const startTs = eventGroup.start?.timestamp ? DateTime.fromISO(eventGroup.start?.timestamp) : DateTime.fromMillis(0)
+    if (startTs.diffNow().negate() > Configuration.app.event_timeout) {
+      return EventStateBadges.timedOut
+    }
+    return EventStateBadges.inProgress
   }
   if (eventGroup.success) {
-    return EventStateMessage.SUCCESS
+    return EventStateBadges.success
   }
-  return EventStateMessage.FAILURE
-}
-
-function getStateColor(eventGroup: EventGroup) {
-  if (!eventGroup.success && !eventGroup.failure) {
-    return "yellow"
-  }
-  if (eventGroup.success) {
-    return "green"
-  }
-  return "red"
+  return EventStateBadges.failure
 }
 
 function getFormattedTime(eventGroup: EventGroup) {
@@ -150,11 +155,11 @@ export function sortEventGroupsByTime(a: EventGroup, b: EventGroup) {
   const aStop = a.success || a.failure
   const bStop = b.success || b.failure
 
-  const aStartTS = (a.start && DateTime.fromISO(a.start.timestamp)) || DateTime.fromMillis(0)
-  const bStartTS = (b.start && DateTime.fromISO(b.start.timestamp)) || DateTime.fromMillis(0)
+  const aStartTS = a.start ? DateTime.fromISO(a.start.timestamp) : DateTime.fromMillis(0)
+  const bStartTS = b.start ? DateTime.fromISO(b.start.timestamp) : DateTime.fromMillis(0)
 
-  const aStopTS = (aStop && DateTime.fromISO(aStop.timestamp)) || aStartTS
-  const bStopTS = (bStop && DateTime.fromISO(bStop.timestamp)) || bStartTS
+  const aStopTS = aStop ? DateTime.fromISO(aStop.timestamp) : aStartTS
+  const bStopTS = bStop ? DateTime.fromISO(bStop.timestamp) : bStartTS
 
   if (aStartTS < bStartTS) {
     return 1
