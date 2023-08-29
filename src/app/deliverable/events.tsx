@@ -42,7 +42,7 @@ const EventRow: FC<{ event: EventGroup }> = memo(({ event }) => (
         <Text>{event.stage ? titlecase(event.stage) : "-"}</Text>
       </TableCell>
       <TableCell className="text-center">
-        <Icon icon={OPERATION_ICONS[event.type]} tooltip={event.type} size="lg" />
+        <Icon icon={OPERATION_ICONS[event.type]} tooltip={titlecase(event.type)} size="lg" />
       </TableCell>
       <TableCell>
         <Flex justifyContent="start">
@@ -95,7 +95,7 @@ export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
         </TableRow>
       </TableHead>
       <TableBody>
-        {props.events.sort(sortEventGroups).map(d => (
+        {props.events.sort(sortEventGroupsByTime).map(d => (
           <EventRow event={d} key={d.partialId} />
         ))}
       </TableBody>
@@ -103,7 +103,7 @@ export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
   )
 }
 
-function formatTimestamp(
+export function formatTimestamp(
   timestamp?: string,
   formatOpts?: Intl.DateTimeFormatOptions | undefined,
   opts?: LocaleOptions | undefined
@@ -146,7 +146,7 @@ function getFormattedTime(eventGroup: EventGroup) {
   return null
 }
 
-function sortEventGroups(a: EventGroup, b: EventGroup) {
+export function sortEventGroupsByTime(a: EventGroup, b: EventGroup) {
   const aStop = a.success || a.failure
   const bStop = b.success || b.failure
 

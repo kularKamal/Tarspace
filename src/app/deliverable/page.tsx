@@ -151,7 +151,7 @@ function Page() {
         </TabList>
         <TabPanels>
           <CustomTabPanel name={Tabs.DETAILS} currentTab={selectedTab}>
-            <DetailsView stages={lastPublishedVersions} />
+            <DetailsView stages={lastPublishedVersions} trackerEvents={eventsList.filter(eg => eg.type === "build")} />
           </CustomTabPanel>
           <CustomTabPanel name={Tabs.VERSIONS} currentTab={selectedTab}>
             <VersionsView events={events} />
