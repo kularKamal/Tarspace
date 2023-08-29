@@ -3,6 +3,7 @@ import {
   Accordion,
   AccordionBody,
   AccordionHeader,
+  Badge,
   Card,
   DateRangePicker,
   DateRangePickerValue,
@@ -160,10 +161,22 @@ function Page() {
             <EventsPanel eventsList={eventsList} />
           </CustomTabPanel>
           <CustomTabPanel name={Tabs.FILES} currentTab={selectedTab}>
-            <Card className="mt-6">
-              <Title className="mb-6">Production</Title>
-              <FilesView />
-            </Card>
+            {customer && project && deliverable
+              ? Object.entries(lastPublishedVersions).map(([stageName, info]) => (
+                  <Card className="mt-6" key={stageName}>
+                    <Flex justifyContent="start" className="space-x-2 mb-6">
+                      <Title>{titlecase(stageName)}</Title>
+                      <Badge color="gray">{info.latestVersion}</Badge>
+                    </Flex>
+                    <FilesView
+                      customer={customer}
+                      project={project}
+                      deliverable={deliverable}
+                      version={info.latestVersion}
+                    />
+                  </Card>
+                ))
+              : null}
           </CustomTabPanel>
         </TabPanels>
       </TabGroup>

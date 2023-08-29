@@ -29,6 +29,7 @@ export type DeliverableDoc = CouchdbDoc & {
   version: string
   artifacts: string[]
   publish: PublishStep[]
+  uploads?: Record<string, string>
 }
 
 export type EventDoc = CouchdbDoc & {
