@@ -109,7 +109,7 @@ export function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
             <Icon icon={IconBrandGithub} variant="light" size="lg" color="blue" />
             <div>
               <Title className="">Repository</Title>
-              <Text className="mt-2">The source code for this deliverable can be found at the following link.</Text>
+              <Text className="mt-1">The source code for this deliverable can be found at the following link.</Text>
             </div>
           </Flex>
           <Flex className="mt-6 pt-4 border-t">

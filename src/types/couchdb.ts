@@ -56,7 +56,7 @@ export type EventGroup = {
   partialId: string
   type: EventOperation
   version: string
-  repository: string
+  repository?: string
   stage?: string | null
   start?: SingleEvent
   stop?: SingleEvent

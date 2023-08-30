@@ -34,18 +34,18 @@ export const VersionsView: FC<VersionViewProps> = ({ events }) => {
         .sort(sortEvents)
         .reverse()
         .map(([version, e]) => (
-          <Grid numItems={7} key={version} className="mt-6 gap-6">
+          <Grid numItems={8} key={version} className="mt-6 gap-6">
             <Col numColSpanMd={1}>
               <Flex flexDirection="col" alignItems="start" className="mt-6">
                 <Title>{version}</Title>
-                <Link to={urlJoin(e[0].repository, `./tree/v${version}`)} className="mt-2 ml-1">
+                <Link to={e[0].repository ? urlJoin(e[0].repository, `./tree/v${version}`) : ""} className="mt-2 ml-1">
                   <Button icon={IconBrandGithub} variant="light">
                     Github
                   </Button>
                 </Link>
               </Flex>
             </Col>
-            <Col numColSpan={7} numColSpanMd={6}>
+            <Col numColSpan={8} numColSpanMd={7}>
               <Card>
                 <EventsView events={e} />
               </Card>

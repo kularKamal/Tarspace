@@ -18,9 +18,10 @@ type SearchResultsProps = {
   queryIsEmpty: boolean
   results: SearcheableDeliverable[]
   loading: boolean
+  onClick?: () => void
 }
 
-const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading }) => {
+const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading, onClick }) => {
   let Content = <SearchNoResultsView />
 
   if (queryIsEmpty) {
@@ -33,6 +34,7 @@ const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading 
             to={`/deliverables/${result.project.split("@").reverse().join("/")}/${result.name}`}
             key={result.slug + index}
             rel="noopener noreferrer"
+            onClick={onClick}
           >
             <Grid numItems={5} className="gap-4">
               <Col numColSpan={2}>
@@ -130,18 +132,11 @@ export const Search: FC = () => {
   return (
     <div
       style={{
-        transition: "width ease 400ms",
         width: showResults ? "50%" : undefined,
       }}
     >
       <Flex flexDirection="col" justifyContent="around">
-        <form
-          className="w-full z-20"
-          onSubmit={e => e.preventDefault()}
-          style={{
-            transition: "width ease 400ms",
-          }}
-        >
+        <form className="w-full z-20" onSubmit={e => e.preventDefault()}>
           <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only">
             Search
           </label>
@@ -154,8 +149,9 @@ export const Search: FC = () => {
               autoComplete="off"
               autoCorrect="off"
               icon={IconSearch}
-              onClickCapture={() => {
+              onClickCapture={event => {
                 if (!showResults) {
+                  event.currentTarget.select()
                   setShowResults(true)
                 }
                 fetchDeliverables()
@@ -164,7 +160,7 @@ export const Search: FC = () => {
                 if (!showResults) {
                   setShowResults(true)
                 }
-                setQuery(e.target.value)
+                setQuery(e.target.value.trim())
               }}
               required
             />
@@ -174,6 +170,7 @@ export const Search: FC = () => {
                 queryIsEmpty={query === ""}
                 results={results.map(result => deliverables[result.ref])}
                 loading={loading}
+                onClick={() => setShowResults(false)}
               />
             ) : null}
           </div>
