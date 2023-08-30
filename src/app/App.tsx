@@ -18,7 +18,7 @@ import {
   Text,
 } from "@tremor/react"
 import { useContext, useEffect, useMemo, useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { AppContext, AuthContext } from "contexts"
 import "./App.css"
@@ -82,6 +82,13 @@ function App() {
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(customer ?? null)
   const [selectedProject, setSelectedProject] = useState<string | null>(project ?? null)
 
+  const [notFound, setNotFound] = useState(false)
+  const navigate = useNavigate()
+
+  if (notFound) {
+    navigate("/not-found")
+  }
+
   useEffect(() => {
     if (!userDb) {
       return
@@ -96,8 +103,14 @@ function App() {
       .view("deliverables", {
         group_level: 3,
         reduce: true,
+        start_key: [selectedCustomer, selectedProject],
+        end_key: [selectedCustomer, selectedProject, "\uffff"],
       })
       .then(resp => {
+        if (resp.total_rows === 0) {
+          setNotFound(true)
+        }
+
         setDeliverables(resp.rows.map(row => row.key as string[]))
       })
   }, [userDb, CouchdbManager, designDoc, project, customer, selectedCustomer, selectedProject])
@@ -106,6 +119,7 @@ function App() {
     if (!userDb) {
       return
     }
+
     CouchdbManager.db(userDb)
       .design(designDoc)
       .view("events-build", {
@@ -123,9 +137,7 @@ function App() {
       })
   }, [userDb, CouchdbManager, designDoc, project, customer])
 
-  const shownDeliverables = deliverables
-    .filter(key => key[0] === selectedCustomer && key[1] === selectedProject)
-    .map(key => key[2])
+  const deliverableNames = deliverables.map(key => key[2])
 
   return (
     <>
@@ -191,7 +203,7 @@ function App() {
         {selectedCustomer === null || selectedProject === null ? (
           <EmptyView />
         ) : (
-          <DeliverablesTable customer={selectedCustomer} project={selectedProject} deliverables={shownDeliverables} />
+          <DeliverablesTable customer={selectedCustomer} project={selectedProject} deliverables={deliverableNames} />
         )}
       </Card>
     </>

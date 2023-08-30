@@ -1,4 +1,5 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
+import { IconAdjustments, IconFile, IconFileDescription, IconTimelineEvent, IconVersions } from "@tabler/icons-react"
 import {
   Accordion,
   AccordionBody,
@@ -20,7 +21,7 @@ import {
   Title,
 } from "@tremor/react"
 import { DateTime } from "luxon"
-import { PropsWithChildren, useContext, useEffect, useState } from "react"
+import { ElementType, PropsWithChildren, useContext, useEffect, useState } from "react"
 import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
@@ -39,6 +40,14 @@ enum Tabs {
   EVENTS = "events",
   FILES = "files",
   CONFIGURATION = "configuration",
+}
+
+const TAB_ICONS: Record<keyof typeof Tabs, ElementType> = {
+  DETAILS: IconFileDescription,
+  VERSIONS: IconVersions,
+  EVENTS: IconTimelineEvent,
+  FILES: IconFile,
+  CONFIGURATION: IconAdjustments,
 }
 
 type StatusFilter = Partial<Record<EventState, boolean>>
@@ -67,6 +76,12 @@ function Page() {
 
   const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), tab ?? Tabs.DETAILS)
 
+  const [notFound, setNotFound] = useState(false)
+
+  if (notFound) {
+    navigate("/not-found")
+  }
+
   useEffect(() => {
     CouchdbManager.db(dbName)
       .design(designDoc)
@@ -92,6 +107,10 @@ function Page() {
         })
         setEvents(groupedEvents)
         setEventsList(eventsList)
+
+        if (eventsList.length === 0) {
+          setNotFound(true)
+        }
       })
 
     CouchdbManager.db(dbName)
@@ -136,7 +155,7 @@ function Page() {
           0
         )}
       >
-        <TabList variant="line">
+        <TabList>
           {Object.entries(Tabs).map(([key, tabName]) => (
             <Tab
               key={key}
@@ -144,6 +163,7 @@ function Page() {
                 setSelectedTab(tabName)
                 navigate(`../${tabName}`, { relative: "path" })
               }}
+              icon={TAB_ICONS[key as keyof typeof Tabs]}
             >
               {titlecase(tabName)}
             </Tab>
