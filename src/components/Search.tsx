@@ -1,11 +1,12 @@
 import { IconSearch, IconSearchOff, IconZoomExclamation } from "@tabler/icons-react"
-import { Button, Card, Col, Divider, Flex, Grid, Text, TextInput, Title } from "@tremor/react"
-import { FC, useContext, useRef, useState } from "react"
+import { Card, Col, Divider, Flex, Grid, Text, TextInput, Title } from "@tremor/react"
+import { ChangeEvent, FC, KeyboardEvent, MouseEvent, useContext, useRef, useState } from "react"
 import { Link } from "react-router-dom"
+import { useDebounce, useOnClickOutside } from "usehooks-ts"
 
 import { Spinner } from "components"
 import { AppContext, AuthContext } from "contexts"
-import { useClickAway, useDebounce, useIndexableData, useLunr, useQueryWildcards } from "hooks"
+import { useIndexableData, useLunr, useQueryWildcards } from "hooks"
 import { DeliverableDoc } from "types"
 
 const SEARCH_FIELDS = ["name", "project", "artifacts", "repository"]
@@ -86,6 +87,7 @@ export const Search: FC = () => {
   const { CouchdbManager } = useContext(AppContext)
   const { userDb, username } = useContext(AuthContext)
 
+  const cache = useRef<Record<string, SearcheableDeliverable> | null>(null)
   const [deliverables, setDeliverables] = useState<Record<string, SearcheableDeliverable>>({})
   const [query, setQuery] = useState<string>("")
   const debouncedQuery = useDebounce(query, 300)
@@ -98,14 +100,19 @@ export const Search: FC = () => {
   const results = useLunr(queryFn, lunrIndexConfig)
 
   const resultsRef = useRef(null)
-  useClickAway(() => {
+  useOnClickOutside(resultsRef, () => {
     if (showResults) {
       setShowResults(false)
     }
-  }, resultsRef)
+  })
 
   async function fetchDeliverables() {
     if (userDb === undefined || username === undefined) {
+      return
+    }
+
+    if (cache.current) {
+      setDeliverables(cache.current)
       return
     }
 
@@ -117,22 +124,45 @@ export const Search: FC = () => {
       })
       .then(resp => {
         const map: Record<string, SearcheableDeliverable> = {}
-        resp.rows
-          // .filter(row => row.value !== undefined)
-          .forEach(row => {
-            const value = row.value as SearcheableDeliverable
-            const path = value.slug
-            map[path] = value
-          })
+        resp.rows.forEach(row => {
+          const value = row.value as SearcheableDeliverable
+          const path = value.slug
+          map[path] = value
+        })
         setDeliverables(map)
+        cache.current = map
         setLoading(false)
       })
+  }
+
+  function handleQueryChange(event: ChangeEvent<HTMLInputElement>) {
+    if (!showResults) {
+      setShowResults(true)
+    }
+    setQuery(event.target.value.trim())
+  }
+
+  function handleKeyPress(event: KeyboardEvent<HTMLInputElement>) {
+    if (showResults && event.key === "Escape") {
+      setShowResults(false)
+      if (document.activeElement && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+    }
+  }
+
+  function handleClick(event: MouseEvent<HTMLInputElement>) {
+    if (!showResults) {
+      event.currentTarget.select()
+      setShowResults(true)
+    }
+    fetchDeliverables()
   }
 
   return (
     <div
       style={{
-        width: showResults ? "50%" : undefined,
+        width: showResults ? "60%" : undefined,
       }}
     >
       <Flex flexDirection="col" justifyContent="around">
@@ -149,22 +179,11 @@ export const Search: FC = () => {
               autoComplete="off"
               autoCorrect="off"
               icon={IconSearch}
-              onClickCapture={event => {
-                if (!showResults) {
-                  event.currentTarget.select()
-                  setShowResults(true)
-                }
-                fetchDeliverables()
-              }}
-              onChange={e => {
-                if (!showResults) {
-                  setShowResults(true)
-                }
-                setQuery(e.target.value.trim())
-              }}
+              onClick={handleClick}
+              onChange={handleQueryChange}
+              onKeyUp={handleKeyPress}
               required
             />
-            <Button type="submit" variant="light" className="absolute right-2.5 bottom-2 font-medium py-2"></Button>
             {showResults ? (
               <SearchResults
                 queryIsEmpty={query === ""}
