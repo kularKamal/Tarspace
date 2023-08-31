@@ -1,7 +1,7 @@
-import { IconCloudDownload, IconFilesOff, IconFolderOpen } from "@tabler/icons-react"
+import { IconCloudDownload, IconFolderOpen } from "@tabler/icons-react"
 import { Button, Flex, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Text } from "@tremor/react"
 import axios from "axios"
-import { FC, useContext, useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 
 import { AppContext, AuthContext } from "contexts"
@@ -73,7 +73,7 @@ type FileRowProps = {
   url: string
 }
 
-const FileRow: FC<FileRowProps> = ({ filename, url }) => {
+function FileRow({ filename, url }: FileRowProps) {
   const [size, setSize] = useState(0)
   const [type, setType] = useState("-")
   const [err, setErr] = useState(false)

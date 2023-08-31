@@ -12,6 +12,15 @@ export type ArtifactDoc = CouchdbDoc & {
   }
 }
 
+export type ConfigurationDoc = CouchdbDoc & {
+  type: "configuration"
+  project: string
+  deliverable: string
+  stage: string
+  timestamp: string
+  configuration: object
+}
+
 export type PublishStep = {
   name: string | null
   type: string

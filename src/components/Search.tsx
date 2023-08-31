@@ -1,6 +1,6 @@
 import { IconSearch, IconSearchOff, IconZoomExclamation } from "@tabler/icons-react"
 import { Card, Col, Divider, Flex, Grid, Text, TextInput, Title } from "@tremor/react"
-import { ChangeEvent, FC, KeyboardEvent, MouseEvent, useContext, useRef, useState } from "react"
+import { ChangeEvent, KeyboardEvent, MouseEvent, useContext, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { useDebounce, useOnClickOutside } from "usehooks-ts"
 
@@ -22,7 +22,7 @@ type SearchResultsProps = {
   onClick?: () => void
 }
 
-const SearchResults: FC<SearchResultsProps> = ({ queryIsEmpty, results, loading, onClick }) => {
+function SearchResults({ queryIsEmpty, results, loading, onClick }: SearchResultsProps) {
   let Content = <SearchNoResultsView />
 
   if (queryIsEmpty) {
@@ -83,7 +83,7 @@ const SearchNoResultsView = () => (
   </Flex>
 )
 
-export const Search: FC = () => {
+export function Search() {
   const { CouchdbManager } = useContext(AppContext)
   const { userDb, username } = useContext(AuthContext)
 
@@ -200,7 +200,7 @@ export const Search: FC = () => {
   )
 }
 
-const SearchOverlay: FC = () => (
+const SearchOverlay = () => (
   <div
     className="w-full h-full fixed top-0 left-0 z-10 pointer-events-none"
     style={{

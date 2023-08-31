@@ -1,6 +1,5 @@
 import { IconBrandGithub } from "@tabler/icons-react"
 import { Button, Card, Col, Flex, Grid, Title } from "@tremor/react"
-import { FC } from "react"
 import { Link } from "react-router-dom"
 import urlJoin from "url-join"
 
@@ -13,7 +12,7 @@ export type VersionViewProps = {
 
 export type VersionEvents = Record<string, EventGroup[]>
 
-export const VersionsView: FC<VersionViewProps> = ({ events }) => {
+export function VersionsView({ events }: VersionViewProps) {
   function sortEvents(a: [string, EventGroup[]], b: [string, EventGroup[]]) {
     function semverCompare(a: string, b: string) {
       if (a.startsWith(b + "-")) {

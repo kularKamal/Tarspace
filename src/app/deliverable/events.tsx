@@ -14,7 +14,7 @@ import {
 } from "@tremor/react"
 import { Configuration } from "config"
 import { DateTime, LocaleOptions } from "luxon"
-import { FC, RefAttributes, memo } from "react"
+import { RefAttributes, memo } from "react"
 
 import { EventGroup, EventOperation } from "types"
 import { titlecase } from "utils"
@@ -47,7 +47,7 @@ function BadgeFactory(text: string, props: BadgeProps & RefAttributes<HTMLSpanEl
 export type EventsViewProps = {
   events: EventGroup[]
 }
-export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
+export function EventsView(props: EventsViewProps) {
   return (
     <Table className="table-fixed">
       <TableHead>
@@ -69,7 +69,8 @@ export const EventsView: FC<EventsViewProps> = (props: EventsViewProps) => {
   )
 }
 
-const EventRow: FC<{ event: EventGroup }> = memo(({ event }) => (
+type EventRowProps = { event: EventGroup }
+const EventRow = memo<EventRowProps>(({ event }) => (
   <TableRow key={event.partialId}>
     <>
       <TableCell className="max-w-[30vh]">

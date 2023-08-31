@@ -5,11 +5,11 @@ export type BreadcrumbsElement = {
   route: string
 }
 
-type CrumbNames = {
+type CrumbOverrides = {
   [key: string]: string | null
 }
 
-const crumbNames: CrumbNames = {
+const crumbOverrides: CrumbOverrides = {
   deliverables: null,
 }
 
@@ -31,7 +31,7 @@ type BreadcrumbsProps = {
   ignoreLast?: boolean
 }
 
-export const Breadcrumbs = (props: BreadcrumbsProps) => {
+export function Breadcrumbs(props: BreadcrumbsProps) {
   const location = useLocation()
 
   const crumbs: BreadcrumbsElement[] =
@@ -40,12 +40,12 @@ export const Breadcrumbs = (props: BreadcrumbsProps) => {
       .split("/")
       .filter(piece => piece.length > 0)
       .map((piece, index, array) => {
-        if (crumbNames[piece] === null) {
+        if (crumbOverrides[piece] === null) {
           return null
         }
 
         return {
-          name: crumbNames[piece] || piece,
+          name: crumbOverrides[piece] || piece,
           route: "/" + array.slice(0, index + 1).join("/"),
         } as BreadcrumbsElement
       })

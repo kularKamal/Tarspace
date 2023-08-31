@@ -1,6 +1,6 @@
 import { IconLogout } from "@tabler/icons-react"
 import { Bold, Button, Divider, Flex, Text, Title } from "@tremor/react"
-import { FC, useContext } from "react"
+import { useContext } from "react"
 import { Link, useNavigate } from "react-router-dom"
 
 import { Search } from "components"
@@ -9,8 +9,7 @@ import { AuthContext } from "contexts"
 const LogoutIcon = () => <IconLogout height={24} />
 
 export type NavBarProps = { title?: string }
-
-export const NavBar: FC<NavBarProps> = props => {
+export function NavBar(props: NavBarProps) {
   const { signOut, username } = useContext(AuthContext)
   const navigate = useNavigate()
 

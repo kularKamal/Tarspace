@@ -8,6 +8,7 @@ import {
 import {
   Button,
   Card,
+  Color,
   Divider,
   Flex,
   Grid,
@@ -18,14 +19,13 @@ import {
   Text,
   Title,
   Tracker,
-  Color,
 } from "@tremor/react"
 import { DateTime } from "luxon"
 import { Link } from "react-router-dom"
 
+import { formatTimestamp, sortEventGroupsByTime } from "app/deliverable/events"
 import { EventGroup, StageInfoMap } from "types"
 import { titlecase } from "utils"
-import { formatTimestamp, sortEventGroupsByTime } from "./events"
 
 interface TrackerDatum {
   color: Color

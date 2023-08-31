@@ -1,6 +1,4 @@
-import { FC } from "react"
-
-export const Spinner: FC = () => (
+export const Spinner = () => (
   <>
     <svg
       aria-hidden="true"

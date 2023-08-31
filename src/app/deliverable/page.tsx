@@ -25,14 +25,15 @@ import { ElementType, PropsWithChildren, useContext, useEffect, useState } from 
 import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
+import { ConfigurationEditor } from "app/deliverable/configuration"
 import { DetailsView } from "app/deliverable/details"
 import { EventState, EventStateBadges, EventStateMessages, EventsView } from "app/deliverable/events"
+import { FilesView } from "app/deliverable/files"
 import { VersionEvents, VersionsView } from "app/deliverable/versions"
 import { Breadcrumbs } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
 import { isStageName, titlecase } from "utils"
-import { FilesView } from "./files"
 
 enum Tabs {
   DETAILS = "details",
@@ -65,9 +66,7 @@ function Page() {
   const navigate = useNavigate()
 
   const { CouchdbManager } = useContext(AppContext)
-  const { username } = useContext(AuthContext)
-
-  const dbName = "userdb-" + Buffer.from(username as string).toString("hex")
+  const { username, userDb } = useContext(AuthContext)
   const designDoc = username as string
 
   const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
@@ -83,7 +82,11 @@ function Page() {
   }
 
   useEffect(() => {
-    CouchdbManager.db(dbName)
+    if (!userDb) {
+      return
+    }
+
+    CouchdbManager.db(userDb)
       .design(designDoc)
       .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
         reduce: true,
@@ -113,7 +116,7 @@ function Page() {
         }
       })
 
-    CouchdbManager.db(dbName)
+    CouchdbManager.db(userDb)
       .design(designDoc)
       .view<(string | undefined)[], EventDoc>("latest-published-version", {
         reduce: false,
@@ -136,7 +139,7 @@ function Page() {
         })
         setLastPublishedVersions(map)
       })
-  }, [CouchdbManager, customer, dbName, deliverable, designDoc, project])
+  }, [CouchdbManager, customer, userDb, deliverable, designDoc, project])
 
   return (
     <>
@@ -197,7 +200,11 @@ function Page() {
                 ))
               : null}
           </CustomTabPanel>
-          <CustomTabPanel name={Tabs.CONFIGURATION} currentTab={selectedTab}></CustomTabPanel>
+          <CustomTabPanel name={Tabs.CONFIGURATION} currentTab={selectedTab}>
+            {customer && project && deliverable ? (
+              <ConfigurationEditor customer={customer} project={project} deliverable={deliverable} />
+            ) : null}
+          </CustomTabPanel>
         </TabPanels>
       </TabGroup>
     </>

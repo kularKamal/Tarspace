@@ -1,9 +1,8 @@
 import { IconArrowLeft } from "@tabler/icons-react"
 import { Button, Flex, Metric, Subtitle, Title } from "@tremor/react"
-import { FC } from "react"
 import { Link } from "react-router-dom"
 
-export const NotFoundPage: FC = () => {
+export function NotFoundPage() {
   return (
     <Flex className="w-full h-full" justifyContent="center">
       <Flex flexDirection="col" justifyContent="center" className="max-w-[30vh] text-center">
