@@ -14,8 +14,7 @@ export type FilesViewProps = {
   deliverable: string
   version: string
 }
-
-export function FilesView({ customer, project, deliverable, version }: FilesViewProps) {
+function FilesView({ customer, project, deliverable, version }: FilesViewProps) {
   const { CouchdbManager } = useContext(AppContext)
   const { username } = useContext(AuthContext)
 
@@ -67,6 +66,7 @@ export function FilesView({ customer, project, deliverable, version }: FilesView
     </Table>
   )
 }
+export default FilesView
 
 type FileRowProps = {
   filename: string

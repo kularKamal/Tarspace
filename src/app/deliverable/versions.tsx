@@ -1,18 +1,19 @@
 import { IconBrandGithub } from "@tabler/icons-react"
 import { Button, Card, Col, Flex, Grid, Title } from "@tremor/react"
+import { lazy } from "react"
 import { Link } from "react-router-dom"
 import urlJoin from "url-join"
 
-import { EventsView } from "app/deliverable/events"
 import { EventGroup } from "types"
+
+const EventsView = lazy(() => import("app/deliverable/events"))
 
 export type VersionViewProps = {
   events: VersionEvents
 }
 
 export type VersionEvents = Record<string, EventGroup[]>
-
-export function VersionsView({ events }: VersionViewProps) {
+function VersionsView({ events }: VersionViewProps) {
   function sortEvents(a: [string, EventGroup[]], b: [string, EventGroup[]]) {
     function semverCompare(a: string, b: string) {
       if (a.startsWith(b + "-")) {
@@ -54,3 +55,4 @@ export function VersionsView({ events }: VersionViewProps) {
     </>
   )
 }
+export default VersionsView

@@ -14,7 +14,7 @@ import {
 } from "@tremor/react"
 import { Configuration } from "config"
 import { DateTime, LocaleOptions } from "luxon"
-import { RefAttributes, memo } from "react"
+import { RefAttributes, memo, useMemo } from "react"
 
 import { EventGroup, EventOperation } from "types"
 import { titlecase } from "utils"
@@ -47,7 +47,9 @@ function BadgeFactory(text: string, props: BadgeProps & RefAttributes<HTMLSpanEl
 export type EventsViewProps = {
   events: EventGroup[]
 }
-export function EventsView(props: EventsViewProps) {
+function EventsView(props: EventsViewProps) {
+  const sorted = useMemo(() => props.events.sort(sortEventGroupsByTime), [props.events])
+
   return (
     <Table className="table-fixed">
       <TableHead>
@@ -61,13 +63,14 @@ export function EventsView(props: EventsViewProps) {
         </TableRow>
       </TableHead>
       <TableBody>
-        {props.events.sort(sortEventGroupsByTime).map(d => (
+        {sorted.map(d => (
           <EventRow event={d} key={d.partialId} />
         ))}
       </TableBody>
     </Table>
   )
 }
+export default EventsView
 
 type EventRowProps = { event: EventGroup }
 const EventRow = memo<EventRowProps>(({ event }) => (

@@ -1,16 +1,17 @@
 import { Logger } from "@iotinga/ts-backpack-common"
-import React from "react"
+import React, { Suspense, lazy } from "react"
 import ReactDOM from "react-dom/client"
 import { Navigate, Route, RouterProvider, createHashRouter, createRoutesFromElements } from "react-router-dom"
 
-import App from "app/App"
-import { Deliverable } from "app/deliverable/index"
 import Layout from "app/layout"
-import { Login } from "app/login/index"
+import { NotFoundPage } from "components/NotFound"
 import { ProtectedRoute } from "components/ProtectedRoute"
 import { AppContextProvider, AuthContextProvider } from "contexts"
 import "./index.css"
-import { NotFoundPage } from "components/NotFound"
+
+const App = lazy(() => import("app/App"))
+const Deliverable = lazy(() => import("app/deliverable"))
+const Login = lazy(() => import("app/login"))
 
 const logger = new Logger("App")
 
@@ -30,7 +31,7 @@ const router = createHashRouter(
         <Route path="deliverables">
           <Route path=":customer" element={<App />} />
           <Route path=":customer/:project" element={<App />} />
-          <Route path=":customer/:project/:deliverable" element={<Navigate to="details" />} />
+          <Route path=":customer/:project/:deliverable" element={<Navigate to="details" replace />} />
           <Route path=":customer/:project/:deliverable/:tab" element={<Deliverable />} />
         </Route>
       </Route>
@@ -44,7 +45,9 @@ root.render(
   <React.StrictMode>
     <AppContextProvider>
       <AuthContextProvider>
-        <RouterProvider router={router} />
+        <Suspense fallback={<div>Loading...</div>}>
+          <RouterProvider router={router} />
+        </Suspense>
       </AuthContextProvider>
     </AppContextProvider>
   </React.StrictMode>

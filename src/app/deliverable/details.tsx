@@ -26,6 +26,7 @@ import { Link } from "react-router-dom"
 import { formatTimestamp, sortEventGroupsByTime } from "app/deliverable/events"
 import { EventGroup, StageInfoMap } from "types"
 import { titlecase } from "utils"
+import { useMemo } from "react"
 
 interface TrackerDatum {
   color: Color
@@ -52,21 +53,28 @@ export type DetailsViewProps = {
   trackerEvents: EventGroup[]
 }
 
-export function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
-  const sortedEvents = trackerEvents.sort(sortEventGroupsByTime).slice(0, Math.min(trackerEvents.length, 36)).reverse()
+function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
+  const sortedEvents = useMemo(
+    () => trackerEvents.sort(sortEventGroupsByTime).slice(0, Math.min(trackerEvents.length, 36)).reverse(),
+    [trackerEvents]
+  )
 
-  const trackerData: TrackerDatum[] = sortedEvents.map(eg => {
-    const tooltip = eg.start?.timestamp && formatTimestamp(eg.start.timestamp, DateTime.DATETIME_MED)
-    if (eg.failure) {
-      return { ...TrackerData.FAILURE, tooltip }
-    }
+  const trackerData: TrackerDatum[] = useMemo(
+    () =>
+      sortedEvents.map(eg => {
+        const tooltip = eg.start?.timestamp && formatTimestamp(eg.start.timestamp, DateTime.DATETIME_MED)
+        if (eg.failure) {
+          return { ...TrackerData.FAILURE, tooltip }
+        }
 
-    if (eg.success) {
-      return { ...TrackerData.SUCCESS, tooltip }
-    }
+        if (eg.success) {
+          return { ...TrackerData.SUCCESS, tooltip }
+        }
 
-    return { ...TrackerData.TIMED_OUT, tooltip }
-  })
+        return { ...TrackerData.TIMED_OUT, tooltip }
+      }),
+    [sortedEvents]
+  )
 
   const firstTs = sortedEvents.at(0)?.start?.timestamp
   const lastTs = sortedEvents.at(sortedEvents.length - 1)?.start?.timestamp
@@ -153,3 +161,5 @@ export function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
     </>
   )
 }
+
+export default DetailsView

@@ -1,3 +1,3 @@
 import Page from "./page"
 
-export { Page as Login }
+export default Page

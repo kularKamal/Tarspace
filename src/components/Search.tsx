@@ -166,7 +166,7 @@ export function Search() {
       }}
     >
       <Flex flexDirection="col" justifyContent="around">
-        <form className="w-full z-20" onSubmit={e => e.preventDefault()}>
+        <form className="w-full z-40" onSubmit={e => e.preventDefault()}>
           <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only">
             Search
           </label>
@@ -174,7 +174,7 @@ export function Search() {
             <TextInput
               type="text"
               id="default-search"
-              className="z-20 bg-tremor-background-muted focus:outline-none focus:ring-0 focus:ring-offset-0"
+              className="z-40 bg-tremor-background-muted focus:outline-none focus:ring-0 focus:ring-offset-0"
               placeholder="Search..."
               autoComplete="off"
               autoCorrect="off"
@@ -202,7 +202,7 @@ export function Search() {
 
 const SearchOverlay = () => (
   <div
-    className="w-full h-full fixed top-0 left-0 z-10 pointer-events-none"
+    className="w-full h-full fixed top-0 left-0 z-30 pointer-events-none"
     style={{
       backgroundColor: "rgba(0, 0, 0, 0.3)",
       transition: "opacity ease 400ms, width 0s, height 0s",

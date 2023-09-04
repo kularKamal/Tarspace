@@ -1,4 +1,16 @@
-import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
+import { CouchdbDoc, CouchdbDocAttachment } from "@iotinga/ts-backpack-couchdb-client"
+
+export type CouchdbAttachmentsWithExclusiveUnion = {
+  [x: string]: ExclusiveUnion<CouchdbDocAttachment>
+}
+
+type DistributedKeyOf<T> = T extends object ? keyof T : never
+
+type CreateExclusiveUnion<T, U = T> = T extends object
+  ? T & Partial<Record<Exclude<DistributedKeyOf<U>, keyof T>, never>>
+  : never
+
+export type ExclusiveUnion<T> = CreateExclusiveUnion<T>
 
 export type ArtifactDoc = CouchdbDoc & {
   type: "artifact"

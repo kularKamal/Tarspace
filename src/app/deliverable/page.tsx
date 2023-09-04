@@ -1,5 +1,5 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
-import { IconAdjustments, IconFile, IconFileDescription, IconTimelineEvent, IconVersions } from "@tabler/icons-react"
+import { IconAdjustments, IconFileDescription, IconHistory, IconPackage, IconVersions } from "@tabler/icons-react"
 import {
   Accordion,
   AccordionBody,
@@ -21,19 +21,22 @@ import {
   Title,
 } from "@tremor/react"
 import { DateTime } from "luxon"
-import { ElementType, PropsWithChildren, useContext, useEffect, useState } from "react"
+import { ElementType, PropsWithChildren, lazy, useContext, useEffect, useState } from "react"
 import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
 import { ConfigurationEditor } from "app/deliverable/configuration"
-import { DetailsView } from "app/deliverable/details"
-import { EventState, EventStateBadges, EventStateMessages, EventsView } from "app/deliverable/events"
-import { FilesView } from "app/deliverable/files"
-import { VersionEvents, VersionsView } from "app/deliverable/versions"
+import { EventState, EventStateBadges, EventStateMessages } from "app/deliverable/events"
+import { VersionEvents } from "app/deliverable/versions"
 import { Breadcrumbs } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
 import { isStageName, titlecase } from "utils"
+
+const DetailsView = lazy(() => import("app/deliverable/details"))
+const EventsView = lazy(() => import("app/deliverable/events"))
+const FilesView = lazy(() => import("app/deliverable/files"))
+const VersionsView = lazy(() => import("app/deliverable/versions"))
 
 enum Tabs {
   DETAILS = "details",
@@ -46,8 +49,8 @@ enum Tabs {
 const TAB_ICONS: Record<keyof typeof Tabs, ElementType> = {
   DETAILS: IconFileDescription,
   VERSIONS: IconVersions,
-  EVENTS: IconTimelineEvent,
-  FILES: IconFile,
+  EVENTS: IconHistory,
+  FILES: IconPackage,
   CONFIGURATION: IconAdjustments,
 }
 
@@ -164,7 +167,7 @@ function Page() {
               key={key}
               onClick={() => {
                 setSelectedTab(tabName)
-                navigate(`../${tabName}`, { relative: "path" })
+                navigate(`../${tabName}`, { relative: "path", replace: true })
               }}
               icon={TAB_ICONS[key as keyof typeof Tabs]}
             >
