@@ -7,9 +7,10 @@ import {
   FileHelper,
   FullFileBrowser,
 } from "@aperturerobotics/chonky"
+import JSZip from "jszip"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { ChonkyIconsTabler } from "components/VFSBrowserIcons"
+import { ChonkyIconsTabler } from "components/VFSBrowser/icons"
 import { CouchdbAttachmentsWithExclusiveUnion } from "types"
 
 // We define a custom interface for file data because we want to add some custom fields
@@ -17,10 +18,16 @@ import { CouchdbAttachmentsWithExclusiveUnion } from "types"
 export interface CustomFileData extends FileData {
   parentId?: string
   childrenIds?: string[]
+  digest?: string
 }
 export interface CustomFileMap {
   [fileId: string]: CustomFileData
 }
+
+export type AttachmentDownloader = (
+  attachments: CouchdbAttachmentsWithExclusiveUnion,
+  filename: string
+) => Promise<Blob>
 
 const prepareCustomFileMap = (attachments: CouchdbAttachmentsWithExclusiveUnion, rootFolderId: string) => {
   const map: CustomFileMap = {}
@@ -51,6 +58,7 @@ const prepareCustomFileMap = (attachments: CouchdbAttachmentsWithExclusiveUnion,
           parentId: parent,
 
           ...(isLeaf && {
+            digest: attachment.digest,
             size: attachment.length,
             ext: attachment.content_type,
           }),
@@ -64,7 +72,11 @@ const prepareCustomFileMap = (attachments: CouchdbAttachmentsWithExclusiveUnion,
 
 // Hook that sets up our file map and defines functions used to mutate - `deleteFiles`,
 // `moveFiles`, and so on.
-const useCustomFileMap = (attachments: CouchdbAttachmentsWithExclusiveUnion, rootFolderId: string) => {
+const useCustomFileMap = (
+  attachments: CouchdbAttachmentsWithExclusiveUnion,
+  downloader: AttachmentDownloader,
+  rootFolderId: string
+) => {
   const { baseFileMap } = useMemo(() => prepareCustomFileMap(attachments, rootFolderId), [attachments, rootFolderId])
 
   // Setup the React state for our file map and the current folder.
@@ -182,6 +194,45 @@ const useCustomFileMap = (attachments: CouchdbAttachmentsWithExclusiveUnion, roo
     })
   }, [])
 
+  // HACK: this manually downloads attachments and slaps them in a zip. We should use the CouchDB client
+  // from ts-backpack as soon as it supports attachments
+  const downloadFiles = useCallback(
+    (files: CustomFileData[]) => {
+      const zip = new JSZip()
+
+      const filenames: Set<string> = new Set()
+      const adjustedCurrentFolder = currentFolderId === rootFolderId ? undefined : currentFolderId
+      files.forEach(fileData => {
+        const fileName = fileData.name
+        const isDir = FileHelper.isDirectory(fileData)
+        const filtered = Object.keys(attachments).filter(key => {
+          if (isDir) {
+            return key.includes([adjustedCurrentFolder, fileName].filter(e => e).join("/"))
+          }
+
+          return key.endsWith(fileName) || key === fileName
+        })
+
+        filtered.forEach(f => filenames.add(f))
+      })
+
+      filenames.forEach(name => {
+        const blob = downloader(attachments, name)
+        zip.file(name, blob)
+      })
+
+      zip.generateAsync({ type: "blob" }).then(blob => {
+        const a = document.createElement("a")
+        const url = window.URL.createObjectURL(blob)
+        a.href = url
+        a.download = `${rootFolderId}_attachments.zip`
+        a.click()
+        window.URL.revokeObjectURL(url)
+      })
+    },
+    [attachments, currentFolderId, downloader, rootFolderId]
+  )
+
   return {
     fileMap,
     currentFolderId,
@@ -189,6 +240,7 @@ const useCustomFileMap = (attachments: CouchdbAttachmentsWithExclusiveUnion, roo
     deleteFiles,
     moveFiles,
     createFolder,
+    downloadFiles,
   }
 }
 
@@ -237,62 +289,96 @@ export const useFileActionHandler = (
   setCurrentFolderId: (folderId: string) => void,
   deleteFiles: (files: CustomFileData[]) => void,
   moveFiles: (files: FileData[], source: FileData, destination: FileData) => void,
-  createFolder: (folderName: string) => void
+  createFolder: (folderName: string) => void,
+  downloadFiles: (files: CustomFileData[]) => void
 ) => {
   return useCallback(
     (data: ChonkyFileActionData) => {
-      if (data.id === ChonkyActions.OpenFiles.id) {
-        const { targetFile, files } = data.payload
-        const fileToOpen = targetFile ?? files[0]
-        if (fileToOpen && FileHelper.isDirectory(fileToOpen)) {
-          setCurrentFolderId(fileToOpen.id)
-          return
+      switch (data.id) {
+        case ChonkyActions.OpenFiles.id: {
+          const { targetFile, files } = data.payload
+          const fileToOpen = targetFile ?? files[0]
+          if (fileToOpen && FileHelper.isDirectory(fileToOpen)) {
+            setCurrentFolderId(fileToOpen.id)
+            return
+          }
+          break
         }
-      } else if (data.id === ChonkyActions.DeleteFiles.id) {
-        deleteFiles(data.state.selectedFilesForAction)
-      } else if (data.id === ChonkyActions.MoveFiles.id) {
-        data.payload.source && moveFiles(data.payload.files, data.payload.source, data.payload.destination)
-      } else if (data.id === ChonkyActions.CreateFolder.id) {
-        const folderName = prompt("Provide the name for your new folder:")
-        if (folderName) {
-          createFolder(folderName)
+
+        case ChonkyActions.DeleteFiles.id: {
+          deleteFiles(data.state.selectedFilesForAction)
+          break
         }
+
+        case ChonkyActions.MoveFiles.id: {
+          data.payload.source && moveFiles(data.payload.files, data.payload.source, data.payload.destination)
+          break
+        }
+
+        case ChonkyActions.CreateFolder.id: {
+          const folderName = prompt("Provide the name for your new folder:")
+          if (folderName) {
+            createFolder(folderName)
+          }
+          break
+        }
+
+        case ChonkyActions.DownloadFiles.id: {
+          downloadFiles(data.state.selectedFiles)
+          break
+        }
+
+        default:
+          break
       }
     },
-    [createFolder, deleteFiles, moveFiles, setCurrentFolderId]
+    [createFolder, deleteFiles, downloadFiles, moveFiles, setCurrentFolderId]
   )
 }
 
 export type VFSProps = Partial<FileBrowserProps> & {
   attachments: CouchdbAttachmentsWithExclusiveUnion
+  downloader: AttachmentDownloader
+  onChange?: (fileMap: CustomFileMap) => void
   rootFolderName?: string
 }
 
 export const VFSBrowser = React.memo((props: VFSProps) => {
-  const { fileMap, currentFolderId, setCurrentFolderId, deleteFiles, moveFiles, createFolder } = useCustomFileMap(
-    props.attachments,
-    props.rootFolderName ?? "attachments"
-  )
+  const { fileMap, currentFolderId, setCurrentFolderId, deleteFiles, moveFiles, createFolder, downloadFiles } =
+    useCustomFileMap(props.attachments, props.downloader, props.rootFolderName ?? "attachments")
   const files = useFiles(fileMap, currentFolderId)
   const folderChain = useFolderChain(fileMap, currentFolderId)
-  const handleFileAction = useFileActionHandler(setCurrentFolderId, deleteFiles, moveFiles, createFolder)
-  const fileActions = useMemo(() => [ChonkyActions.CreateFolder, ChonkyActions.DeleteFiles], [])
+  const handleFileAction = useFileActionHandler(setCurrentFolderId, deleteFiles, moveFiles, createFolder, downloadFiles)
+  const fileActions = useMemo(
+    () => [
+      ChonkyActions.CreateFolder,
+      ChonkyActions.DeleteFiles,
+      ChonkyActions.DownloadFiles,
+      ChonkyActions.ClearSelection,
+      ChonkyActions.SelectAllFiles,
+      ChonkyActions.EnableListView,
+      ChonkyActions.EnableGridView,
+      ChonkyActions.SortFilesByName,
+      ChonkyActions.SortFilesBySize,
+      ChonkyActions.ToggleHiddenFiles,
+      ChonkyActions.ToggleShowFoldersFirst,
+    ],
+    []
+  )
 
   return (
     <FullFileBrowser
       theme={{
-        margins: {
-          rootLayoutMargin: 0,
-        },
         root: {
           borderStyle: "none",
         },
       }}
-      muiThemeOptions={{}}
       files={files}
       iconComponent={ChonkyIconsTabler}
       folderChain={folderChain}
       fileActions={fileActions}
+      defaultFileViewActionId={ChonkyActions.EnableListView.id}
+      disableDefaultFileActions
       onFileAction={handleFileAction}
       {...props}
     />

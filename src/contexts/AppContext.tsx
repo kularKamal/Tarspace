@@ -2,7 +2,7 @@ import { CouchdbAuthMethod, CouchdbConnectionParams, CouchdbManager } from "@iot
 import React, { createContext } from "react"
 
 import { CliAPI } from "api/CliAPI"
-import { DEFAULT_CONFIG } from "config"
+import { Configuration } from "config"
 
 type AppContextType = {
   CliAPIClient: CliAPI
@@ -11,9 +11,9 @@ type AppContextType = {
 }
 
 const connectionParams: CouchdbConnectionParams = {
-  protocol: DEFAULT_CONFIG.couchdb.protocol,
-  host: DEFAULT_CONFIG.couchdb.host,
-  port: DEFAULT_CONFIG.couchdb.port,
+  protocol: Configuration.couchdb.protocol,
+  host: Configuration.couchdb.host,
+  port: Configuration.couchdb.port,
   authMethod: CouchdbAuthMethod.COOKIE_RFC2109,
 }
 

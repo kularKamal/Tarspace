@@ -7,9 +7,12 @@ import { DateTime } from "luxon"
 import { MouseEvent, useContext, useEffect, useRef, useState } from "react"
 import { useEventListener } from "usehooks-ts"
 
-import { VFSBrowser } from "components/VFSBrowser"
+import { CouchdbDoc, URL_SEPARATOR } from "@iotinga/ts-backpack-couchdb-client"
+import axios from "axios"
+import { AttachmentDownloader, VFSBrowser } from "components/VFSBrowser/VFSBrowser"
+import { Configuration } from "config"
 import { AppContext, AuthContext } from "contexts"
-import { ConfigurationDoc, CouchdbAttachmentsWithExclusiveUnion } from "types"
+import { ConfigurationDoc } from "types"
 import { getCodeMirrorMode } from "utils/editor"
 
 const EXT: Extension[] = [
@@ -17,10 +20,11 @@ const EXT: Extension[] = [
     ".cm-scroller": {
       height: "100%",
       overflow: "auto",
-      "-webkit-user-select": "none",
-      "-moz-user-select": "none",
-      "-ms-user-select": "none",
-      "user-select": "none",
+    },
+    ".cm-gutters": {
+      userSelect: "none",
+      // backgroundColor: "inherit",
+      // borderRight: 0,
     },
     ".cm-content, .cm-gutter, .cm-editor": {
       height: "100%",
@@ -28,6 +32,14 @@ const EXT: Extension[] = [
     },
     "&.cm-editor.cm-focused": {
       outline: "none",
+    },
+    ".cm-foldGutter span": {
+      fontSize: "1.1rem",
+      lineHeight: "1.1rem",
+      color: "rgb(130, 130, 130, 0.5)",
+    },
+    ".cm-foldGutter span:hover": {
+      color: "#999999",
     },
   }),
   getCodeMirrorMode("a.json") ?? [],
@@ -77,25 +89,32 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
 
     CouchdbManager.db(userDb)
       .design(designDoc)
-      .view<(string | undefined)[], ConfigurationDoc>("configurations", {
-        include_docs: true,
-        inclusive_end: true,
-        att_encoding_info: true,
-        start_key: [customer, project, deliverable, "production"],
-        end_key: [customer, project, deliverable, "production"],
+      .view<(string | undefined)[], ConfigurationDoc>("configurations-latest", {
+        reduce: true,
+        key: [customer, project, deliverable, "production"],
       })
       .then(resp => {
         if (resp.rows.length === 0) {
-          return
+          throw Error
         }
 
-        const doc = resp.rows[0].doc
-        setConfigDoc(doc || null)
+        const value = resp.rows[0].value as Pick<CouchdbDoc, "_id">
+        if (!value._id) {
+          throw Error
+        }
 
+        return CouchdbManager.db(userDb).get<ConfigurationDoc>(value._id, {
+          // attachments: true,
+          att_encoding_info: true,
+        })
+      })
+      .then(resp => {
+        setConfigDoc(resp)
         const text = CMText.of(configString.split("\n"))
         setBaseText(text)
         setCurrentText(text)
       })
+      .catch(_ => {})
   }, [CouchdbManager, configString, customer, deliverable, designDoc, project, userDb])
 
   async function handleSave(event: MouseEvent<HTMLButtonElement>) {
@@ -116,7 +135,7 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
     }
     await CouchdbManager.db(userDb)
       .createOrUpdateDoc(newConfig)
-      .then(resp => {
+      .then(_ => {
         setIsSaving(false)
         setConfigDoc(newConfig)
       })
@@ -130,25 +149,21 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
     )
   }
 
-  const a: CouchdbAttachmentsWithExclusiveUnion = {
-    "dir/file2.yaml": {
-      content_type: "",
-      data: "",
-      digest: "",
-      revpos: 1,
-    },
-    "dir/subdir/file3.yaml": {
-      content_type: "",
-      data: "",
-      digest: "",
-      revpos: 1,
-    },
-    "file1.yaml": {
-      content_type: "",
-      data: "",
-      digest: "",
-      revpos: 1,
-    },
+  // HACK: remove this when the couchd client supports attachments
+  const downloader: AttachmentDownloader = async (attachments, filename) => {
+    const path = [
+      `${Configuration.couchdb.protocol}://${Configuration.couchdb.host}:${Configuration.couchdb.port}`,
+      userDb,
+      encodeURIComponent(configDoc._id ?? ""),
+      filename,
+    ].join(URL_SEPARATOR)
+
+    return axios
+      .get(path, {
+        responseType: "blob",
+        withCredentials: true,
+      })
+      .then(resp => resp.data as Blob)
   }
 
   return (
@@ -194,8 +209,12 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
               indentWithTab
             />
           </TabPanel>
-          <TabPanel className="h-[60vh] mt-0 p-6">
-            <VFSBrowser attachments={configDoc._attachments ?? {}} rootFolderName={deliverable} />
+          <TabPanel className="h-[60vh] mt-0 p-4">
+            <VFSBrowser
+              attachments={configDoc._attachments ?? {}}
+              rootFolderName={deliverable}
+              downloader={downloader}
+            />
           </TabPanel>
         </TabPanels>
       </TabGroup>

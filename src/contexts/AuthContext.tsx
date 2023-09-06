@@ -1,12 +1,6 @@
 import { Logger } from "@iotinga/ts-backpack-common"
-import {
-  CouchdbAuthMethod,
-  CouchdbConnectionParams,
-  CouchdbManager,
-  CouchdbSessionInfo,
-  CouchdbUserCtx,
-} from "@iotinga/ts-backpack-couchdb-client"
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { CouchdbManager, CouchdbSessionInfo } from "@iotinga/ts-backpack-couchdb-client"
+import React, { createContext, useContext, useState } from "react"
 
 import { AppContext } from "contexts/AppContext"
 
@@ -59,16 +53,12 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
       .then(resp => {
         setUserDb(usernameToDbName(resp.name))
         setUsername(username)
+        return true
       })
-      .then(
-        _ => {
-          return true
-        },
-        err => {
-          logger.error(err)
-          return false
-        }
-      )
+      .catch(err => {
+        logger.error(err)
+        return false
+      })
   }
 
   function usernameToDbName(name: string) {

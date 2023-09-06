@@ -48,8 +48,8 @@ import {
   IconSelectAll,
   IconSettings,
   IconShare,
-  IconSortAscendingNumbers,
-  IconSortDescendingNumbers,
+  IconSortAscendingLetters,
+  IconSortDescendingLetters,
   IconTableFilled,
   IconTerminal,
   IconToggleLeft,
@@ -89,8 +89,8 @@ const IconMap: {
   [ChonkyIconName.clearSelection]: IconDeselect,
 
   // File Actions: Sorting & options
-  [ChonkyIconName.sortAsc]: IconSortAscendingNumbers,
-  [ChonkyIconName.sortDesc]: IconSortDescendingNumbers,
+  [ChonkyIconName.sortAsc]: IconSortAscendingLetters,
+  [ChonkyIconName.sortDesc]: IconSortDescendingLetters,
   [ChonkyIconName.toggleOn]: IconToggleLeft,
   [ChonkyIconName.toggleOff]: IconToggleRight,
 
@@ -163,8 +163,10 @@ export const ChonkyIconsTabler: React.FC<ChonkyIconProps> = React.memo(props => 
     tablerIcon = IconMap[icon as keyof typeof IconMap] ?? IconMap.fallbackIcon
   }
 
+  // Fixes React warnings since some props are custom to Chonky and MUI
+  const { fixedWidth, spin, ...cleanProps } = props
   const tablerProps: IconProps = {
-    ...props,
+    ...cleanProps,
     icon: tablerIcon,
   } as const
   return <Icon className="p-0 align-text-bottom" color="gray" {...tablerProps} />
