@@ -169,7 +169,7 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
   return (
     <Card className="mt-6 p-0 min-h-[20vh]">
       <TabGroup>
-        <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background shadow-tremor-card">
+        <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background border-b-tremor-border border-b rounded-t-tremor-default">
           <TabList className="mx-6" variant="solid">
             <Tab icon={IconPencil}>Configuration</Tab>
             <Tab icon={IconPaperclip}>Attachments</Tab>

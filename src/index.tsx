@@ -13,8 +13,6 @@ const App = lazy(() => import("app/App"))
 const Deliverable = lazy(() => import("app/deliverable"))
 const Login = lazy(() => import("app/login"))
 
-const logger = new Logger("App")
-
 const router = createHashRouter(
   createRoutesFromElements(
     <>

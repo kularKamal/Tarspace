@@ -6,6 +6,7 @@ import { useDebounce, useOnClickOutside } from "usehooks-ts"
 
 import { Spinner } from "components"
 import { AppContext, AuthContext } from "contexts"
+import { motion } from "framer-motion"
 import { useIndexableData, useLunr, useQueryWildcards } from "hooks"
 import { DeliverableDoc } from "types"
 import { ScreenOverlay } from "./ScreenOverlay"
@@ -41,7 +42,7 @@ function SearchResults({ queryIsEmpty, results, loading, onClick }: SearchResult
             <Grid numItems={5} className="gap-4">
               <Col numColSpan={2}>
                 <Flex flexDirection="col" alignItems="start">
-                  <Title>{result.name}</Title>
+                  <Title className="truncate">{result.name}</Title>
                   <Text>{result.project}</Text>
                 </Flex>
               </Col>
@@ -58,15 +59,32 @@ function SearchResults({ queryIsEmpty, results, loading, onClick }: SearchResult
   }
 
   return (
-    <Card className="z-20 mt-2 mb-32 absolute overflow-y-auto max-h-[80vh]">
-      {loading ? (
-        <Flex role="status" flexDirection="col" justifyContent="center" alignItems="center" className="h-20">
-          <Spinner />
-        </Flex>
-      ) : (
-        Content
-      )}
-    </Card>
+    <motion.div
+      initial={{
+        opacity: 0,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+      animate={{
+        opacity: 1,
+        transitionEnd: {
+          overflow: "visible",
+          textOverflow: "clip",
+          whiteSpace: "normal",
+        },
+      }}
+    >
+      <Card className="z-20 mt-2 mb-32 absolute overflow-y-auto max-h-[80vh]">
+        {loading ? (
+          <Flex role="status" flexDirection="col" justifyContent="center" alignItems="center" className="h-20">
+            <Spinner />
+          </Flex>
+        ) : (
+          Content
+        )}
+      </Card>
+    </motion.div>
   )
 }
 
@@ -91,7 +109,7 @@ export function Search() {
   const cache = useRef<Record<string, SearcheableDeliverable> | null>(null)
   const [deliverables, setDeliverables] = useState<Record<string, SearcheableDeliverable>>({})
   const [query, setQuery] = useState<string>("")
-  const debouncedQuery = useDebounce(query, 300)
+  const debouncedQuery = useDebounce(query, 100)
   const queryFn = useQueryWildcards(debouncedQuery)
 
   const [showResults, setShowResults] = useState(false)
@@ -161,9 +179,9 @@ export function Search() {
   }
 
   return (
-    <div
-      style={{
-        width: showResults ? "60%" : undefined,
+    <motion.div
+      animate={{
+        width: showResults ? "60%" : "auto",
       }}
     >
       <Flex flexDirection="col" justifyContent="around">
@@ -197,6 +215,6 @@ export function Search() {
         </form>
         {showResults ? <ScreenOverlay /> : null}
       </Flex>
-    </div>
+    </motion.div>
   )
 }

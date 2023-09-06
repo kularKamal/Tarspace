@@ -26,7 +26,7 @@ import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
 import { ConfigurationEditor } from "app/deliverable/configuration"
-import { EventState, EventStateBadges, EventStateMessages } from "app/deliverable/events"
+import { EventState, EventStateBadges, EventStateMessages, isInProgress, isTimedOut } from "app/deliverable/events"
 import { VersionEvents } from "app/deliverable/versions"
 import { Breadcrumbs } from "components"
 import { AppContext, AuthContext } from "contexts"
@@ -236,9 +236,16 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
   })
   const [opFilter, setOpFilter] = useState()
 
-  const visibleEvents = eventsList.filter(
-    e => isEventInRange(startRange, e.start) && isEventInRange(endRange, e.failure || e.success)
-  )
+  const visibleEvents = eventsList.filter(e => {
+    const isInRange = isEventInRange(startRange, e.start) && isEventInRange(endRange, e.failure || e.success)
+    const isStatusInFilter =
+      (e.success && statusFilter.success) ||
+      (e.failure && statusFilter.failure) ||
+      (isTimedOut(e) && statusFilter.timedOut) ||
+      (isInProgress(e) && statusFilter.inProgress)
+
+    return isInRange && isStatusInFilter
+  })
 
   function isEventInRange(range: DateRangePickerValue, e?: SingleEvent) {
     if (!e) {

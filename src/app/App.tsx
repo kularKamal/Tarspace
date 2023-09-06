@@ -21,7 +21,6 @@ import { useContext, useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { AppContext, AuthContext } from "contexts"
-import "./App.css"
 
 const logger = new Logger("App")
 

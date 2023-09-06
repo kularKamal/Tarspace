@@ -35,7 +35,7 @@ export const EventStateBadges: Record<EventState, JSX.Element> = {
   timedOut: BadgeFactory(EventStateMessages.timedOut, { color: "gray", size: "xl" }),
 }
 
-const OPERATION_ICONS: Record<EventOperation, TablerIcon> = {
+export const OPERATION_ICONS: Record<EventOperation, TablerIcon> = {
   build: IconTool,
   publish: IconCubeSend,
 }
@@ -131,9 +131,8 @@ export function formatTimestamp(
 }
 
 function getBadge(eventGroup: EventGroup) {
-  if (!eventGroup.success && !eventGroup.failure) {
-    const startTs = eventGroup.start?.timestamp ? DateTime.fromISO(eventGroup.start?.timestamp) : DateTime.fromMillis(0)
-    if (startTs.diffNow().negate() > Configuration.app.event_timeout) {
+  if (isInProgress(eventGroup)) {
+    if (isTimedOut(eventGroup)) {
       return EventStateBadges.timedOut
     }
     return EventStateBadges.inProgress
@@ -178,4 +177,17 @@ export function sortEventGroupsByTime(a: EventGroup, b: EventGroup) {
   }
 
   return 0
+}
+
+export function isTimedOut(eventGroup: EventGroup) {
+  const startTs = eventGroup.start?.timestamp ? DateTime.fromISO(eventGroup.start?.timestamp) : DateTime.fromMillis(0)
+  return (
+    eventGroup.success === undefined &&
+    eventGroup.failure === undefined &&
+    startTs.diffNow().negate() > Configuration.app.eventTimeout
+  )
+}
+
+export function isInProgress(eventGroup: EventGroup) {
+  return !eventGroup.success && !eventGroup.failure
 }

@@ -2,7 +2,7 @@ import { Duration } from "luxon"
 
 export type Config = {
   app: {
-    event_timeout: Duration
+    eventTimeout: Duration
   }
   couchdb: {
     protocol: "http" | "https"
@@ -13,7 +13,7 @@ export type Config = {
 
 export const DEFAULT_CONFIG: Config = {
   app: {
-    event_timeout: Duration.fromObject({ days: 1 }),
+    eventTimeout: Duration.fromObject({ days: 1 }),
   },
   couchdb: {
     protocol: "http",

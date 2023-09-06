@@ -37,6 +37,7 @@
     "@uiw/codemirror-extensions-langs": "^4.21.12",
     "@uiw/react-codemirror": "^4.21.12",
     "axios": "^1.4.0",
+    "framer-motion": "^10.16.4",
     "jszip": "^3.10.1",
     "lunr": "^2.3.9",
     "luxon": "^3.4.0",
