@@ -1,9 +1,9 @@
-import { Logger } from "@iotinga/ts-backpack-common"
 import React, { Suspense, lazy } from "react"
 import ReactDOM from "react-dom/client"
 import { Navigate, Route, RouterProvider, createHashRouter, createRoutesFromElements } from "react-router-dom"
 
 import Layout from "app/layout"
+import { Loading } from "components/Loading"
 import { NotFoundPage } from "components/NotFound"
 import { ProtectedRoute } from "components/ProtectedRoute"
 import { AppContextProvider, AuthContextProvider } from "contexts"
@@ -17,6 +17,7 @@ const router = createHashRouter(
   createRoutesFromElements(
     <>
       <Route path="/login" element={<Login />} />
+      <Route path="/loading" element={<Loading />} />
       <Route
         path="/"
         element={
@@ -43,7 +44,7 @@ root.render(
   <React.StrictMode>
     <AppContextProvider>
       <AuthContextProvider>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<Loading />}>
           <RouterProvider router={router} />
         </Suspense>
       </AuthContextProvider>

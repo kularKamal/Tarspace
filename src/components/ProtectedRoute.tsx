@@ -2,6 +2,7 @@ import { CouchdbUserCtx } from "@iotinga/ts-backpack-couchdb-client"
 import { PropsWithChildren, useContext, useEffect, useReducer, useState } from "react"
 import { Navigate, Outlet, useLocation } from "react-router-dom"
 
+import { Loading } from "components/Loading"
 import { AuthContext } from "contexts"
 import { LocationState } from "types"
 
@@ -25,7 +26,7 @@ export function ProtectedRoute(props: ProtectedRouteProps) {
   }, [getSessionInfo])
 
   if (!loaded) {
-    return <div>Logging in...</div>
+    return <Loading />
   }
 
   if (userCtx === undefined) {

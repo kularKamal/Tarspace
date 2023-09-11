@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@aperturerobotics/chonky": "^0.2.6",
+    "@headlessui/react": "^1.7.17",
     "@iotinga/ts-backpack-common": "^2.1.0",
     "@iotinga/ts-backpack-couchdb-client": "^2.0.5",
     "@ssttevee/multipart-parser": "^0.1.9",
@@ -29,7 +30,7 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
-    "@tremor/react": "^3.6.6",
+    "@tremor/react": "^3.7.4",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.38",
     "@types/react": "^18.2.15",

@@ -20,12 +20,11 @@
 
 html {
   /* Avoids layout jumping when scroll bars appear */
-  margin-left: calc(100vw - 100%)
+  margin-left: calc(100vw - 100%);
 }
 
 body {
   margin: 0;
-  background-color: theme("colors.tremor.background.muted");
   min-width: 320px;
   min-height: 100vh;
 }

@@ -17,7 +17,7 @@ import {
   TableRow,
   Text,
 } from "@tremor/react"
-import { useContext, useEffect, useMemo, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { AppContext, AuthContext } from "contexts"
@@ -155,7 +155,7 @@ function App() {
             <Icon icon={IconPackage} variant="light" size="xl" color="blue" />
             <div className="truncate">
               <Text>Deliverables</Text>
-              <Metric className="truncate">{deliverables.length}</Metric>
+              <Metric className="truncate">{deliverables.length === 0 ? "-" : deliverables.length}</Metric>
             </div>
           </Flex>
         </Card>

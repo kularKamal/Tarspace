@@ -1,15 +1,15 @@
 import { IconSearch, IconSearchOff, IconZoomExclamation } from "@tabler/icons-react"
 import { Card, Col, Divider, Flex, Grid, Text, TextInput, Title } from "@tremor/react"
+import { motion } from "framer-motion"
 import { ChangeEvent, KeyboardEvent, MouseEvent, useContext, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { useDebounce, useOnClickOutside } from "usehooks-ts"
 
 import { Spinner } from "components"
+import { ScreenOverlay } from "components/ScreenOverlay"
 import { AppContext, AuthContext } from "contexts"
-import { motion } from "framer-motion"
 import { useIndexableData, useLunr, useQueryWildcards } from "hooks"
 import { DeliverableDoc } from "types"
-import { ScreenOverlay } from "./ScreenOverlay"
 
 const SEARCH_FIELDS = ["name", "project", "artifacts", "repository"]
 type SearcheableKeys = "name" | "project" | "artifacts" | "repository"
@@ -185,7 +185,8 @@ export function Search() {
       }}
     >
       <Flex flexDirection="col" justifyContent="around">
-        <form className="w-full z-[40]" onSubmit={e => e.preventDefault()}>
+        {showResults ? <ScreenOverlay /> : null}
+        <form className="w-full z-30" onSubmit={e => e.preventDefault()}>
           <label htmlFor="default-search" className="mb-2 text-sm font-medium text-gray-900 sr-only">
             Search
           </label>
@@ -193,7 +194,7 @@ export function Search() {
             <TextInput
               type="text"
               id="default-search"
-              className="z-[40] bg-tremor-background-muted focus:outline-none focus:ring-0 focus:ring-offset-0"
+              className="bg-tremor-background-muted focus:outline-none focus:ring-0 focus:ring-offset-0"
               placeholder="Search..."
               autoComplete="off"
               autoCorrect="off"
@@ -213,7 +214,6 @@ export function Search() {
             ) : null}
           </div>
         </form>
-        {showResults ? <ScreenOverlay /> : null}
       </Flex>
     </motion.div>
   )

@@ -1,10 +1,16 @@
+import { forwardRef } from "react"
+
 export type ScreenOverlayProps = {
   zIndex?: number
 }
 
-export const ScreenOverlay = ({ zIndex = 30 }: ScreenOverlayProps) => (
+export const ScreenOverlay = forwardRef<HTMLDivElement, ScreenOverlayProps>(({ zIndex = 20 }, forwardedRef) => (
   <div
-    className="w-full h-full fixed top-0 left-0 pointer-events-none bg-black opacity-30"
-    style={{ zIndex: zIndex }}
+    className="w-full h-full fixed inset-0 pointer-events-none bg-gray-900/25"
+    aria-hidden
+    style={{
+      zIndex: zIndex,
+    }}
+    ref={forwardedRef}
   />
-)
+))

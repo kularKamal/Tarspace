@@ -218,7 +218,7 @@ const useCustomFileMap = (
 
       filenames.forEach(name => {
         const blob = downloader(attachments, name)
-        zip.file(name, blob)
+        zip.file([rootFolderId, name].join("/"), blob)
       })
 
       zip.generateAsync({ type: "blob" }).then(blob => {
@@ -233,6 +233,49 @@ const useCustomFileMap = (
     [attachments, currentFolderId, downloader, rootFolderId]
   )
 
+  // Function that will be called when files are moved from one folder to another
+  // using drag & drop.
+  const uploadFiles = useCallback(() => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.multiple = true
+
+    input.click()
+    // FIXME: wait for files selection
+
+    setFileMap((currentFileMap: CustomFileMap) => {
+      const newFileMap = { ...currentFileMap }
+      // const moveFileIds = new Set(files.map(f => f.id))
+
+      // // Delete files from their source folder.
+      // const newSourceChildrenIds = (source.childrenIds ?? []).filter(id => !moveFileIds.has(id))
+      // newFileMap[source.id] = {
+      //   ...source,
+      //   childrenIds: newSourceChildrenIds,
+      //   childrenCount: newSourceChildrenIds.length,
+      // }
+
+      // // Add the files to their destination folder.
+      // const newDestinationChildrenIds = [...(destination.childrenIds ?? []), ...files.map(f => f.id)]
+      // newFileMap[destination.id] = {
+      //   ...destination,
+      //   childrenIds: newDestinationChildrenIds,
+      //   childrenCount: newDestinationChildrenIds.length,
+      // }
+
+      // // Finally, update the parent folder ID on the files from source folder
+      // // ID to the destination folder ID.
+      // files.forEach(file => {
+      //   newFileMap[file.id] = {
+      //     ...file,
+      //     parentId: destination.id,
+      //   }
+      // })
+
+      return newFileMap
+    })
+  }, [])
+
   return {
     fileMap,
     currentFolderId,
@@ -241,6 +284,7 @@ const useCustomFileMap = (
     moveFiles,
     createFolder,
     downloadFiles,
+    uploadFiles,
   }
 }
 
@@ -290,7 +334,8 @@ export const useFileActionHandler = (
   deleteFiles: (files: CustomFileData[]) => void,
   moveFiles: (files: FileData[], source: FileData, destination: FileData) => void,
   createFolder: (folderName: string) => void,
-  downloadFiles: (files: CustomFileData[]) => void
+  downloadFiles: (files: CustomFileData[]) => void,
+  uploadFiles: () => void
 ) => {
   return useCallback(
     (data: ChonkyFileActionData) => {
@@ -328,11 +373,16 @@ export const useFileActionHandler = (
           break
         }
 
+        case ChonkyActions.UploadFiles.id: {
+          uploadFiles()
+          break
+        }
+
         default:
           break
       }
     },
-    [createFolder, deleteFiles, downloadFiles, moveFiles, setCurrentFolderId]
+    [createFolder, deleteFiles, downloadFiles, moveFiles, setCurrentFolderId, uploadFiles]
   )
 }
 
@@ -344,16 +394,32 @@ export type VFSProps = Partial<FileBrowserProps> & {
 }
 
 export const VFSBrowser = React.memo((props: VFSProps) => {
-  const { fileMap, currentFolderId, setCurrentFolderId, deleteFiles, moveFiles, createFolder, downloadFiles } =
-    useCustomFileMap(props.attachments, props.downloader, props.rootFolderName ?? "attachments")
+  const {
+    fileMap,
+    currentFolderId,
+    setCurrentFolderId,
+    deleteFiles,
+    moveFiles,
+    createFolder,
+    downloadFiles,
+    uploadFiles,
+  } = useCustomFileMap(props.attachments, props.downloader, props.rootFolderName ?? "attachments")
   const files = useFiles(fileMap, currentFolderId)
   const folderChain = useFolderChain(fileMap, currentFolderId)
-  const handleFileAction = useFileActionHandler(setCurrentFolderId, deleteFiles, moveFiles, createFolder, downloadFiles)
+  const handleFileAction = useFileActionHandler(
+    setCurrentFolderId,
+    deleteFiles,
+    moveFiles,
+    createFolder,
+    downloadFiles,
+    uploadFiles
+  )
   const fileActions = useMemo(
     () => [
       ChonkyActions.CreateFolder,
       ChonkyActions.DeleteFiles,
       ChonkyActions.DownloadFiles,
+      ChonkyActions.UploadFiles,
       ChonkyActions.ClearSelection,
       ChonkyActions.SelectAllFiles,
       ChonkyActions.EnableListView,

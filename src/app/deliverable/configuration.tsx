@@ -1,6 +1,6 @@
 import { Text as CMText, Extension } from "@codemirror/state"
 import { IconDeviceFloppy, IconPaperclip, IconPencil } from "@tabler/icons-react"
-import { Button, Card, Flex, Tab, TabGroup, TabList, TabPanel, TabPanels, Text } from "@tremor/react"
+import { Button, Card, Flex, Tab, TabGroup, TabList, TabPanel, TabPanels, Text, Title } from "@tremor/react"
 import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror"
 import { EditorView } from "codemirror"
 import { DateTime } from "luxon"
@@ -128,7 +128,7 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
       _id: `configuration:${project}@${customer}/${deliverable}/production/${now.toMillis()}`,
       type: "configuration",
       configuration: JSON.parse(currentText.toString()),
-      project: project,
+      project: [project, customer].join("@"),
       deliverable: deliverable,
       stage: "production",
       timestamp: now.toISO() as string,
@@ -169,7 +169,8 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
   return (
     <Card className="mt-6 p-0 min-h-[20vh]">
       <TabGroup>
-        <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background border-b-tremor-border border-b rounded-t-tremor-default">
+        <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background dark:bg-dark-tremor-background border-b-tremor-border border-b rounded-t-tremor-default">
+          <Title className="ml-6">Production</Title>
           <TabList className="mx-6" variant="solid">
             <Tab icon={IconPencil}>Configuration</Tab>
             <Tab icon={IconPaperclip}>Attachments</Tab>
@@ -205,6 +206,7 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
                   setCurrentText(viewUpdate.state.doc)
                 }
               }}
+              editable={false}
               autoFocus
               indentWithTab
             />
