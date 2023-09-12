@@ -29,7 +29,7 @@ export const PRODUCTION_CONFIG: Config = {
   couchdb: {
     protocol: "http",
     host: "couchdb.tinga.io",
-    port: 80,
+    port: 443,
   },
 }
 
