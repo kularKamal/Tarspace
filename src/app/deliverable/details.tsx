@@ -24,9 +24,9 @@ import { DateTime } from "luxon"
 import { Link } from "react-router-dom"
 
 import { formatTimestamp, sortEventGroupsByTime } from "app/deliverable/events"
+import { useMemo } from "react"
 import { EventGroup, StageInfoMap } from "types"
 import { titlecase } from "utils"
-import { useMemo } from "react"
 
 interface TrackerDatum {
   color: Color
@@ -46,6 +46,9 @@ const TrackerData: Record<string, TrackerDatum> = {
     color: "gray",
     tooltip: "Timed out",
   },
+  EMPTY: {
+    color: "gray",
+  },
 }
 
 export type DetailsViewProps = {
@@ -61,18 +64,20 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
 
   const trackerData: TrackerDatum[] = useMemo(
     () =>
-      sortedEvents.map(eg => {
-        const tooltip = eg.start?.timestamp && formatTimestamp(eg.start.timestamp, DateTime.DATETIME_MED)
-        if (eg.failure) {
-          return { ...TrackerData.FAILURE, tooltip }
-        }
+      new Array(36 - sortedEvents.length).fill(TrackerData.EMPTY).concat(
+        sortedEvents.map(eg => {
+          const tooltip = eg.start?.timestamp && formatTimestamp(eg.start.timestamp, DateTime.DATETIME_MED)
+          if (eg.failure) {
+            return { ...TrackerData.FAILURE, tooltip }
+          }
 
-        if (eg.success) {
-          return { ...TrackerData.SUCCESS, tooltip }
-        }
+          if (eg.success) {
+            return { ...TrackerData.SUCCESS, tooltip }
+          }
 
-        return { ...TrackerData.TIMED_OUT, tooltip }
-      }),
+          return { ...TrackerData.TIMED_OUT, tooltip }
+        })
+      ),
     [sortedEvents]
   )
 
@@ -114,13 +119,19 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
       <Grid numItemsMd={2} className="gap-6 lg:mt-6">
         <Card>
           <Flex justifyContent="start" className="space-x-6" alignItems="start">
-            <Icon icon={IconBrandGithub} variant="light" size="lg" color="blue" />
+            <Icon
+              icon={IconBrandGithub}
+              variant="light"
+              size="lg"
+              color="blue"
+              className="bg-tremor-brand-muted dark:bg-dark-tremor-brand-muted text-tremor-brand dark:text-dark-tremor-brand"
+            />
             <div>
               <Title className="">Repository</Title>
               <Text className="mt-1">The source code for this deliverable can be found at the following link.</Text>
             </div>
           </Flex>
-          <Flex className="mt-6 pt-4 border-t">
+          <Flex className="mt-6 pt-4 border-t dark:border-t-dark-tremor-background-subtle">
             <Link
               to={(Object.values(stages)[0] && Object.values(stages)[0].repository) || "#"}
               target="_blank"

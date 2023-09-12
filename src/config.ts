@@ -22,4 +22,15 @@ export const DEFAULT_CONFIG: Config = {
   },
 }
 
-export const Configuration = DEFAULT_CONFIG
+export const PRODUCTION_CONFIG: Config = {
+  app: {
+    eventTimeout: Duration.fromObject({ days: 1 }),
+  },
+  couchdb: {
+    protocol: "http",
+    host: "couchdb.tinga.io",
+    port: 80,
+  },
+}
+
+export const Configuration = process.env.NODE_ENV === "production" ? PRODUCTION_CONFIG : DEFAULT_CONFIG

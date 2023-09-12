@@ -143,7 +143,13 @@ function App() {
       <Grid numItemsMd={2} className="mt-6 gap-6">
         <Card>
           <Flex justifyContent="start" className="space-x-4">
-            <Icon icon={IconFlask} variant="light" size="xl" color="blue" />
+            <Icon
+              icon={IconFlask}
+              variant="light"
+              size="xl"
+              color="blue"
+              className="bg-tremor-brand-muted dark:bg-dark-tremor-brand-muted text-tremor-brand dark:text-dark-tremor-brand"
+            />
             <div className="truncate">
               <Text>Projects</Text>
               <Metric className="truncate">{projects.length}</Metric>
@@ -152,7 +158,13 @@ function App() {
         </Card>
         <Card>
           <Flex justifyContent="start" className="space-x-4">
-            <Icon icon={IconPackage} variant="light" size="xl" color="blue" />
+            <Icon
+              icon={IconPackage}
+              variant="light"
+              size="xl"
+              color="blue"
+              className="bg-tremor-brand-muted dark:bg-dark-tremor-brand-muted text-tremor-brand dark:text-dark-tremor-brand"
+            />
             <div className="truncate">
               <Text>Deliverables</Text>
               <Metric className="truncate">{deliverables.length === 0 ? "-" : deliverables.length}</Metric>
