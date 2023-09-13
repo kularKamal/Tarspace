@@ -1,12 +1,14 @@
 import { CouchdbUserCtx } from "@iotinga/ts-backpack-couchdb-client"
-import { PropsWithChildren, useContext, useEffect, useReducer, useState } from "react"
+import { ReactElement, useContext, useEffect, useReducer, useState } from "react"
 import { Navigate, Outlet, useLocation } from "react-router-dom"
 
-import { Loading } from "components/Loading"
+import { Loading } from "components"
 import { AuthContext } from "contexts"
 import { LocationState } from "types"
 
-export type ProtectedRouteProps = PropsWithChildren
+export type ProtectedRouteProps = {
+  children: ReactElement
+}
 
 export function ProtectedRoute(props: ProtectedRouteProps) {
   const { getSessionInfo } = useContext(AuthContext)

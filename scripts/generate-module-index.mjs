@@ -7,7 +7,9 @@ import path from "path"
 
 const SRCDIR = "src"
 const MODULES = ["components", "contexts", "hooks", "types", "utils"]
+const EXTS = [".tsx", ".ts", ".jsx", ".js"]
 
+/* eslint-disable no-console */
 async function generate() {
   try {
     for (const mod of MODULES) {
@@ -19,12 +21,13 @@ async function generate() {
         if (!dirent.isFile) {
           continue
         }
-        const name = path.parse(dirent.name).name
-        if (name === "index") {
+        const filePath = path.parse(dirent.name)
+        if (filePath.name === "index" || !EXTS.includes(filePath.ext)) {
+          console.log("Skipped", path.join(mod, dirent.name))
           continue
         }
 
-        const template = `export * from "${mod}/${name}"\n`
+        const template = `export * from "${mod}/${filePath.name}"\n`
         lines.push(template)
       }
 

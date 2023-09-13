@@ -27,7 +27,7 @@ export const PRODUCTION_CONFIG: Config = {
     eventTimeout: Duration.fromObject({ days: 1 }),
   },
   couchdb: {
-    protocol: "http",
+    protocol: "https",
     host: "couchdb.tinga.io",
     port: 443,
   },
