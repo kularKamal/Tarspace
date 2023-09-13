@@ -1,14 +1,14 @@
 import { Text as CMText, Extension } from "@codemirror/state"
+import { CouchdbDoc, URL_SEPARATOR } from "@iotinga/ts-backpack-couchdb-client"
 import { IconDeviceFloppy, IconPaperclip, IconPencil } from "@tabler/icons-react"
 import { Button, Card, Flex, Tab, TabGroup, TabList, TabPanel, TabPanels, Text, Title } from "@tremor/react"
 import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror"
+import axios from "axios"
 import { EditorView } from "codemirror"
 import { DateTime } from "luxon"
 import { MouseEvent, useContext, useEffect, useRef, useState } from "react"
 import { useEventListener } from "usehooks-ts"
 
-import { CouchdbDoc, URL_SEPARATOR } from "@iotinga/ts-backpack-couchdb-client"
-import axios from "axios"
 import { AttachmentDownloader, VFSBrowser } from "components/VFSBrowser/VFSBrowser"
 import { Configuration } from "config"
 import { AppContext, AuthContext } from "contexts"
@@ -16,32 +16,37 @@ import { ConfigurationDoc } from "types"
 import { getCodeMirrorMode } from "utils/editor"
 
 const EXT: Extension[] = [
-  EditorView.theme({
-    ".cm-scroller": {
-      height: "100%",
-      overflow: "auto",
+  EditorView.theme(
+    {
+      ".cm-scroller": {
+        height: "100%",
+        overflow: "auto",
+      },
+      ".cm-gutters": {
+        userSelect: "none",
+        // backgroundColor: "inherit",
+        // borderRight: 0,
+      },
+      ".cm-content, .cm-gutter, .cm-editor": {
+        height: "100%",
+        minHeight: "20vh",
+      },
+      "&.cm-editor.cm-focused": {
+        outline: "none",
+      },
+      ".cm-foldGutter span": {
+        fontSize: "1.1rem",
+        lineHeight: "1.1rem",
+        color: "rgb(130, 130, 130, 0.5)",
+      },
+      ".cm-foldGutter span:hover": {
+        color: "#999999",
+      },
     },
-    ".cm-gutters": {
-      userSelect: "none",
-      // backgroundColor: "inherit",
-      // borderRight: 0,
-    },
-    ".cm-content, .cm-gutter, .cm-editor": {
-      height: "100%",
-      minHeight: "20vh",
-    },
-    "&.cm-editor.cm-focused": {
-      outline: "none",
-    },
-    ".cm-foldGutter span": {
-      fontSize: "1.1rem",
-      lineHeight: "1.1rem",
-      color: "rgb(130, 130, 130, 0.5)",
-    },
-    ".cm-foldGutter span:hover": {
-      color: "#999999",
-    },
-  }),
+    {
+      dark: false,
+    }
+  ),
   getCodeMirrorMode("a.json") ?? [],
 ]
 
@@ -198,8 +203,8 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
               height="100%"
               width="100%"
               value={configString}
-              theme={"light"}
               extensions={extensions}
+              theme="light"
               ref={editor}
               onChange={(_, viewUpdate) => {
                 if (viewUpdate.docChanged) {
