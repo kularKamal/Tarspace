@@ -36,7 +36,7 @@ function VersionsView({ events }: VersionViewProps) {
         .map(([version, e]) => (
           <Grid numItems={8} key={version} className="mt-6 gap-6">
             <Col numColSpanMd={1}>
-              <Flex flexDirection="col" alignItems="start" className="mt-6">
+              <Flex flexDirection="col" alignItems="start" className="mt-6 sticky inset-0 top-6">
                 <Title>{version}</Title>
                 <Link to={e[0].repository ? urlJoin(e[0].repository, `./tree/v${version}`) : ""} className="mt-2 ml-1">
                   <Button icon={IconBrandGithub} variant="light">

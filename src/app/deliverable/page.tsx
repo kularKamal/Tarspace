@@ -260,38 +260,42 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
   }
 
   return (
-    <Card className="mt-6">
-      <Flex className="space-x-4" justifyContent="start" alignItems="center">
-        <DateRangePicker placeholder="Filter start dates..." enableYearNavigation onValueChange={setStartRange} />
-        <MultiSelect
-          placeholder="Select status..."
-          defaultValue={Object.keys(statusFilter)}
-          onValueChange={value => {
-            const statusFilter = (value as EventState[]).reduce((acc, v) => {
-              acc[v] = true
-              return acc
-            }, {} as StatusFilter)
-            setStatusFilter(statusFilter)
-          }}
-        >
-          {Object.keys(EventStateMessages).map(eventState => (
-            <MultiSelectItem key={eventState} value={eventState}>
-              {EventStateBadges[eventState as EventState]}
-            </MultiSelectItem>
-          ))}
-        </MultiSelect>
-      </Flex>
-      <Accordion className="w-full p-0 mt-4 mb-4 border-none overflow-visible w-fit">
-        <AccordionHeader className="px-2 pt-0 flex-row-reverse w-fit">
-          <Flex>
-            <Text className="text-left ml-4 mb-0.5">Advanced search</Text>
-          </Flex>
-        </AccordionHeader>
-        <AccordionBody className="px-0">
-          <DateRangePicker placeholder="Filter end dates..." enableYearNavigation onValueChange={setEndRange} />
-        </AccordionBody>
-      </Accordion>
-      <EventsView events={visibleEvents} />
+    <Card className="mt-6 p-0">
+      <div className="sticky px-6 pt-6 inset-0 z-10 bg-tremor-background dark:bg-dark-tremor-background border-b-tremor-border dark:border-b-dark-tremor-background-subtle border-b rounded-t-tremor-default">
+        <Flex className="space-x-4" justifyContent="start" alignItems="center">
+          <DateRangePicker placeholder="Filter start dates..." enableYearNavigation onValueChange={setStartRange} />
+          <MultiSelect
+            placeholder="Select status..."
+            defaultValue={Object.keys(statusFilter)}
+            onValueChange={value => {
+              const statusFilter = (value as EventState[]).reduce((acc, v) => {
+                acc[v] = true
+                return acc
+              }, {} as StatusFilter)
+              setStatusFilter(statusFilter)
+            }}
+          >
+            {Object.keys(EventStateMessages).map(eventState => (
+              <MultiSelectItem key={eventState} value={eventState}>
+                {EventStateBadges[eventState as EventState]}
+              </MultiSelectItem>
+            ))}
+          </MultiSelect>
+        </Flex>
+        <Accordion className="w-full p-0 mt-4 mb-4 border-none overflow-visible w-fit">
+          <AccordionHeader className="px-2 pt-0 flex-row-reverse w-fit">
+            <Flex>
+              <Text className="text-left ml-4 mb-0.5">Advanced search</Text>
+            </Flex>
+          </AccordionHeader>
+          <AccordionBody className="px-0">
+            <DateRangePicker placeholder="Filter end dates..." enableYearNavigation onValueChange={setEndRange} />
+          </AccordionBody>
+        </Accordion>
+      </div>
+      <div className="px-6">
+        <EventsView events={visibleEvents} />
+      </div>
     </Card>
   )
 }

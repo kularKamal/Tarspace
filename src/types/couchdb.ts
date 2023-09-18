@@ -12,6 +12,8 @@ type CreateExclusiveUnion<T, U = T> = T extends object
 
 export type ExclusiveUnion<T> = CreateExclusiveUnion<T>
 
+export type CompanyLogDoc = ArtifactDoc | ConfigurationDoc | DeliverableDoc | EventDoc
+
 export type ArtifactDoc = CouchdbDoc & {
   type: "artifact"
   build_id: string
@@ -80,7 +82,6 @@ export type EventGroup = {
   repository?: string
   stage?: string | null
   start?: SingleEvent
-  stop?: SingleEvent
   success?: SingleEvent
   failure?: SingleEvent
 }
