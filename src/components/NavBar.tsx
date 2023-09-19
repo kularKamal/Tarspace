@@ -18,7 +18,6 @@ export function NavBar(props: NavBarProps) {
     <>
       <Flex>
         <Link to="/">
-          {/* <Title>{props.title || "IOTINGA Space"}</Title> */}
           <IotingaLogo width={40} height={40} />
         </Link>
         <Search />

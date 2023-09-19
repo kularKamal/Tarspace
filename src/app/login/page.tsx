@@ -1,9 +1,10 @@
-import { Button, Card, Flex, Metric, TextInput } from "@tremor/react"
+import { Button, Card, Flex, Metric, Text, TextInput } from "@tremor/react"
 import { useContext, useRef, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import { Container } from "components"
 import { AuthContext } from "contexts"
+import { ReactComponent as IotingaLogo } from "logo-full.svg"
 import { LocationState } from "types"
 
 function Page() {
@@ -31,27 +32,44 @@ function Page() {
   }
 
   return (
-    <Container className="h-full">
-      <Flex className="h-full" flexDirection="col" alignItems="center" justifyContent="center">
-        <Card className="max-w-sm">
-          <Metric>Login</Metric>
-          <form className="mt-8" onSubmit={onSubmit}>
-            <TextInput className="mt-1" placeholder="Username" ref={usernameRef} error={hasError}></TextInput>
-            <TextInput
-              className="mt-4"
-              placeholder="Password"
-              ref={passwordRef}
-              error={hasError}
-              errorMessage={hasError ? "Wrong username or password" : undefined}
-              type="password"
-            ></TextInput>
-            <Button type="submit" size="lg" className="w-full mt-8">
-              Login
-            </Button>
-          </form>
-        </Card>
-      </Flex>
-    </Container>
+    <>
+      <Link to="https://iotinga.com">
+        <IotingaLogo className="m-4 fixed" width={48} height={48} />
+      </Link>
+      <Container className="h-full">
+        <Flex className="h-full" flexDirection="col" alignItems="center" justifyContent="center">
+          <Card className="w-1/3 p-10">
+            <Metric className="mb-1">Welcome back</Metric>
+            <Text>Sign in to your account</Text>
+            <form className="mt-8" onSubmit={onSubmit}>
+              <div className="mt-4">
+                <Text>Username</Text>
+                <TextInput className="mt-2" placeholder="user.name" ref={usernameRef} error={hasError}></TextInput>
+              </div>
+              <div className="mt-6">
+                <Flex flexDirection="row" justifyContent="between">
+                  <Text>Password</Text>
+                  <Button variant="light" tooltip="Contact us if it happens">
+                    Forgot password?
+                  </Button>
+                </Flex>
+                <TextInput
+                  className="mt-2"
+                  placeholder="••••••••"
+                  ref={passwordRef}
+                  error={hasError}
+                  errorMessage={hasError ? "Wrong username or password" : undefined}
+                  type="password"
+                ></TextInput>
+              </div>
+              <Button type="submit" size="lg" className="w-full mt-8">
+                Login
+              </Button>
+            </form>
+          </Card>
+        </Flex>
+      </Container>
+    </>
   )
 }
 
