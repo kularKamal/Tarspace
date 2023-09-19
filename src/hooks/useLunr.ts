@@ -71,4 +71,6 @@ export const useQueryWildcards =
   queryBuilder =>
     query.split(sep ? sep : " ").forEach(term => {
       queryBuilder.term(term, { wildcard: Query.wildcard.LEADING | Query.wildcard.TRAILING })
+      queryBuilder.term(term, { wildcard: Query.wildcard.TRAILING })
+      queryBuilder.term(term, { wildcard: Query.wildcard.LEADING })
     })

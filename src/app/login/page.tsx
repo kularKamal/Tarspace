@@ -49,7 +49,7 @@ function Page() {
               <div className="mt-6">
                 <Flex flexDirection="row" justifyContent="between">
                   <Text>Password</Text>
-                  <Button variant="light" tooltip="Contact us if it happens">
+                  <Button variant="light" tooltip="Contact us if it happens" tabIndex={-1}>
                     Forgot password?
                   </Button>
                 </Flex>
