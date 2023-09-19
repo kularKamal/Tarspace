@@ -2,8 +2,8 @@ import { Logger } from "@iotinga/ts-backpack-common"
 import { CouchdbDesignDocument, CouchdbManager, CouchdbSessionInfo } from "@iotinga/ts-backpack-couchdb-client"
 import React, { createContext, useContext, useState } from "react"
 
-import { createDesignDoc, designDocIdFor } from "api"
 import { AppContext } from "contexts/AppContext"
+import DESIGN_DOC from "design-doc.json"
 import equal from "fast-deep-equal"
 
 const logger = new Logger("AuthContext")
@@ -67,8 +67,12 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
       )
   }
 
+  const designDocIdFor = (username: string) => `_design/${username}`
+
   async function createUserDesignDoc(username: string) {
-    const newDesignDoc = createDesignDoc(username)
+    const newDesignDoc = DESIGN_DOC as CouchdbDesignDocument
+    newDesignDoc._id = designDocIdFor(username)
+
     const shouldUpdate = await manager
       .db(usernameToDbName(username))
       .get<CouchdbDesignDocument>(designDocIdFor(username))
@@ -78,7 +82,7 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
       )
 
     if (shouldUpdate) {
-      await manager.db(usernameToDbName(username)).createOrUpdateDesign(newDesignDoc)
+      await manager.db(usernameToDbName(username)).createOrUpdateDoc(newDesignDoc)
     }
   }
 

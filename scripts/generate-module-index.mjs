@@ -1,11 +1,13 @@
 import { promises } from "fs"
 import path from "path"
+import { find } from "./project-root.mjs"
 
 /**
  * Generates index.ts containing `export * from "<module>"` for the modules in MODULES
  */
 
-const SRCDIR = "src"
+const ROOT = find().next().directory
+const SRCDIR = path.join(ROOT, "src")
 const MODULES = ["components", "contexts", "hooks", "types", "utils"]
 const EXTS = [".tsx", ".ts", ".jsx", ".js"]
 

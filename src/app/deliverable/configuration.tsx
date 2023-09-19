@@ -9,11 +9,11 @@ import { DateTime } from "luxon"
 import { MouseEvent, useContext, useEffect, useRef, useState } from "react"
 import { useEventListener } from "usehooks-ts"
 
-import { AttachmentDownloader, VFSBrowser } from "components/VFSBrowser/VFSBrowser"
+import { AttachmentDownloader, VFSBrowser } from "components/VFSBrowser"
 import { Configuration } from "config"
 import { AppContext, AuthContext } from "contexts"
 import { ConfigurationDoc } from "types"
-import { getCodeMirrorMode } from "utils/editor"
+import { getCodeMirrorMode } from "utils"
 
 const EXT: Extension[] = [
   EditorView.theme(

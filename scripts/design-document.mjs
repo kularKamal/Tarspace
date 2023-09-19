@@ -1,102 +1,54 @@
-import { CouchdbDesignDocDefinition } from "@iotinga/ts-backpack-couchdb-client"
-import { CompanyLogDoc, ConfigurationDoc, EventDoc, EventGroup } from "types"
+import { prepareDesignDoc } from "@iotinga/ts-backpack-couchdb-client"
+import { promises } from "fs"
+import path from "path"
+import { find } from "./project-root.mjs"
 
-declare function emit(args: unknown, value: unknown): void
+const ROOT = find().next().directory
+const OUTPUT_FILE = path.join(ROOT, "src", "design-doc.json")
 
-export function designDocIdFor(username: string) {
-  return `_design/${username}`
-}
-
-export function createDesignDoc(username: string): CouchdbDesignDocDefinition<CompanyLogDoc> {
-  return {
-    name: username,
-    language: "javascript",
-    views: {
-      artifacts: {
-        map: artifactsMap,
-      },
-      configurations: {
-        map: configurationMap,
-      },
-      "configurations-latest": {
-        map: configurationLatestMap,
-        reduce: configurationLatestReduce,
-      },
-      deliverables: {
-        map: deliverablesMap,
-        reduce: "_count",
-      },
-      "deliverables-search": {
-        map: deliverablesSearchMap,
-        reduce: deliverablesSearchReduce,
-      },
-      events: {
-        map: eventsMap,
-        reduce: "_count",
-      },
-      "events-build": {
-        map: eventsBuildMap,
-        reduce: "_count",
-      },
-      "events-publish": {
-        map: eventsPublishMap,
-        reduce: "_count",
-      },
-      "grouped-events": {
-        map: groupedEventsMap,
-        reduce: groupedEventsReduce,
-      },
-      "latest-published-version": {
-        map: latestPublishedVersionMap,
-        reduce: latestPublishedVersionReduce,
-      },
-    },
-  }
-}
-
-const artifactsMap = function (doc: CompanyLogDoc) {
+const artifactsMap = function (doc) {
   if (doc.type === "artifact") {
     const [project, customer] = doc.project.split("@")
     emit([customer, project, doc.name, doc.version], { _id: doc._id })
   }
 }
 
-const configurationMap = function (doc: CompanyLogDoc) {
+const configurationMap = function (doc) {
   if (doc.type === "configuration") {
     const [project, customer] = doc.project.split("@")
     emit([customer, project, doc.deliverable, doc.stage], { _id: doc._id })
   }
 }
 
-const configurationLatestMap = function (doc: CompanyLogDoc) {
+const configurationLatestMap = function (doc) {
   if (doc.type === "configuration") {
     const [project, customer] = doc.project.split("@")
     emit([customer, project, doc.deliverable, doc.stage], { _id: doc._id, timestamp: doc.timestamp })
   }
 }
 
-const configurationLatestReduce = function (keys: unknown[], values: unknown[], rereduce: boolean) {
+const configurationLatestReduce = function (keys, values, rereduce) {
   let latest = {}
   let latest_date = new Date(0)
 
   for (let i = 0; i < values.length; i++) {
-    const dt = new Date((values[i] as ConfigurationDoc).timestamp)
+    const dt = new Date(values[i].timestamp)
     if (dt >= latest_date) {
       latest_date = dt
-      latest = values[i] as ConfigurationDoc
+      latest = values[i]
     }
   }
   return latest
 }
 
-const deliverablesMap = function (doc: CompanyLogDoc) {
+const deliverablesMap = function (doc) {
   if (doc.type === "deliverable") {
     const [project, customer] = doc.project.split("@")
     emit([customer, project, doc.name, doc.version], { _id: doc._id })
   }
 }
 
-const deliverablesSearchMap = function (doc: CompanyLogDoc) {
+const deliverablesSearchMap = function (doc) {
   if (doc.type === "deliverable") {
     const [project, customer] = doc.project.split("@")
     emit([customer, project, doc.name], {
@@ -109,7 +61,7 @@ const deliverablesSearchMap = function (doc: CompanyLogDoc) {
   }
 }
 
-const deliverablesSearchReduce = function (keys: unknown[], values: unknown[], rereduce: boolean) {
+const deliverablesSearchReduce = function (keys, values, rereduce) {
   const out = {}
   values.forEach(v => {
     Object.assign(out, v)
@@ -117,7 +69,7 @@ const deliverablesSearchReduce = function (keys: unknown[], values: unknown[], r
   return out
 }
 
-const eventsMap = function (doc: CompanyLogDoc) {
+const eventsMap = function (doc) {
   if (doc.type === "event") {
     const [project, customer] = doc.project.split("@")
 
@@ -125,21 +77,21 @@ const eventsMap = function (doc: CompanyLogDoc) {
   }
 }
 
-const eventsBuildMap = function (doc: CompanyLogDoc) {
+const eventsBuildMap = function (doc) {
   if (doc.type === "event" && doc.stage === null) {
     const [project, customer] = doc.project.split("@")
     emit([customer, project, doc.target, doc.timestamp], 1)
   }
 }
 
-const eventsPublishMap = function (doc: CompanyLogDoc) {
+const eventsPublishMap = function (doc) {
   if (doc.type === "event" && doc.stage && doc.event !== "start") {
     const [project, customer] = doc.project.split("@")
     emit([customer, project, doc.target, doc.stage, doc.timestamp], doc.event.toUpperCase())
   }
 }
 
-const groupedEventsMap = function (doc: CompanyLogDoc) {
+const groupedEventsMap = function (doc) {
   if (doc.type === "event" && doc._id) {
     const [project, customer] = doc.project.split("@")
     const partialId = doc._id.substring(0, doc._id.lastIndexOf("/"))
@@ -147,17 +99,16 @@ const groupedEventsMap = function (doc: CompanyLogDoc) {
   }
 }
 
-const groupedEventsReduce = function (keys: unknown[], values: unknown[], rereduce: boolean) {
+const groupedEventsReduce = function (keys, values, rereduce) {
   if (!rereduce) {
-    const out: Partial<EventGroup> = {}
+    const out = {}
 
-    const values_cast = values as EventDoc[]
-    values_cast.forEach((v: EventDoc) => {
+    values.forEach(v => {
       if (!v._id) {
         return out
       }
 
-      out[v.event as "start" | "success" | "failure"] = {
+      out[v.event] = {
         id: v._id,
         timestamp: v.timestamp,
       }
@@ -176,16 +127,16 @@ const groupedEventsReduce = function (keys: unknown[], values: unknown[], reredu
   return out
 }
 
-const latestPublishedVersionMap = function (doc: CompanyLogDoc) {
+const latestPublishedVersionMap = function (doc) {
   if (doc.type === "event" && doc.event === "success" && doc.stage) {
     const [project, customer] = doc.project.split("@")
     emit([customer, project, doc.target, doc.stage], doc.version)
   }
 }
 
-const latestPublishedVersionReduce = function (keys: unknown[], values: unknown[], rereduce: boolean) {
+const latestPublishedVersionReduce = function (keys, values, rereduce) {
   // From https://gist.github.com/iwill/a83038623ba4fef6abb9efca87ae9ccb\nfunction
-  function semverCompare(a: string, b: string) {
+  function semverCompare(a, b) {
     if (a.startsWith(b + "-")) {
       return -1
     }
@@ -202,10 +153,64 @@ const latestPublishedVersionReduce = function (keys: unknown[], values: unknown[
     }
 
     const current = values[i]
-    if (semverCompare(current as string, latest) > 0) {
-      latest = current as string
+    if (semverCompare(current, latest) > 0) {
+      latest = current
     }
   }
 
   return latest
 }
+
+const DESIGN_DOC_BODY = {
+  name: "TEMPLATE",
+  language: "javascript",
+  views: {
+    artifacts: {
+      map: artifactsMap,
+    },
+    configurations: {
+      map: configurationMap,
+    },
+    "configurations-latest": {
+      map: configurationLatestMap,
+      reduce: configurationLatestReduce,
+    },
+    deliverables: {
+      map: deliverablesMap,
+      reduce: "_count",
+    },
+    "deliverables-search": {
+      map: deliverablesSearchMap,
+      reduce: deliverablesSearchReduce,
+    },
+    events: {
+      map: eventsMap,
+      reduce: "_count",
+    },
+    "events-build": {
+      map: eventsBuildMap,
+      reduce: "_count",
+    },
+    "events-publish": {
+      map: eventsPublishMap,
+      reduce: "_count",
+    },
+    "grouped-events": {
+      map: groupedEventsMap,
+      reduce: groupedEventsReduce,
+    },
+    "latest-published-version": {
+      map: latestPublishedVersionMap,
+      reduce: latestPublishedVersionReduce,
+    },
+  },
+}
+
+/* eslint-disable no-console */
+async function writeJson() {
+  const doc = prepareDesignDoc(DESIGN_DOC_BODY)
+  await promises.writeFile(OUTPUT_FILE, JSON.stringify(doc), { flag: "w+", encoding: "utf-8" })
+  console.log(`Wrote to '${OUTPUT_FILE}'`)
+}
+
+writeJson()

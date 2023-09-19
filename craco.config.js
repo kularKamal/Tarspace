@@ -21,6 +21,7 @@ module.exports = {
           Buffer: ["buffer", "Buffer"],
         }),
       ])
+
       return config
     },
   },
