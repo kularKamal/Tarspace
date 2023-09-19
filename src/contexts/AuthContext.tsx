@@ -72,7 +72,10 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
     const shouldUpdate = await manager
       .db(usernameToDbName(username))
       .get<CouchdbDesignDocument>(designDocIdFor(username))
-      .then(resp => equal(resp.views, newDesignDoc.views))
+      .then(
+        resp => equal(resp.views, newDesignDoc.views),
+        _err => true
+      )
 
     if (shouldUpdate) {
       await manager.db(usernameToDbName(username)).createOrUpdateDesign(newDesignDoc)
