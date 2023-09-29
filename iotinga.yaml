@@ -1,5 +1,5 @@
 version: 1
-project: CI-WEB-INTERFACE@IOTINGA
+project: OFFICE_AUTOMATION@IOTINGA
 remote_url: https://github.com/iotinga/iotinga-delivery-web-app
 
 prepare:
