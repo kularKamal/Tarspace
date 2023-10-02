@@ -6,11 +6,15 @@ import Layout from "app/layout"
 import { Loading } from "components/Loading"
 import { NotFoundPage } from "components/NotFound"
 import { ProtectedRoute } from "components/ProtectedRoute"
+import { Configuration } from "config"
 import { AppContextProvider, AuthContextProvider } from "contexts"
+import { Settings } from "luxon"
 import "./index.css"
 
 const App = lazy(() => import("app/App"))
 const Deliverable = lazy(() => import("app/deliverable"))
+const Customer = lazy(() => import("app/customer"))
+const Project = lazy(() => import("app/project"))
 const Login = lazy(() => import("app/login"))
 
 const router = createHashRouter(
@@ -28,8 +32,8 @@ const router = createHashRouter(
       >
         <Route path="" element={<App />} />
         <Route path="deliverables">
-          <Route path=":customer" element={<App />} />
-          <Route path=":customer/:project" element={<App />} />
+          <Route path=":customer" element={<Customer />} />
+          <Route path=":customer/:project" element={<Project />} />
           <Route path=":customer/:project/:deliverable" element={<Navigate to="details" replace />} />
           <Route path=":customer/:project/:deliverable/:tab" element={<Deliverable />} />
         </Route>
@@ -38,6 +42,9 @@ const router = createHashRouter(
     </>
   )
 )
+
+// If configured, force Luxon to use Italian locale
+Configuration.app.forceLocale && (Settings.defaultLocale = Configuration.app.forceLocale)
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
 root.render(

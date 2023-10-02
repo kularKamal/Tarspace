@@ -12,12 +12,11 @@ import {
   TableRow,
   Text,
 } from "@tremor/react"
-import { Configuration } from "config"
-import { DateTime, LocaleOptions } from "luxon"
+import { DateTime } from "luxon"
 import { RefAttributes, memo, useMemo } from "react"
 
 import { EventGroup, EventOperation } from "types"
-import { titlecase } from "utils"
+import { formatTimestamp, isInProgress, isTimedOut, sortEventGroupsByTime, titlecase } from "utils"
 
 export type EventState = "success" | "failure" | "inProgress" | "timedOut"
 
@@ -118,18 +117,6 @@ const EventRow = memo<EventRowProps>(({ event }) => (
   </TableRow>
 ))
 
-export function formatTimestamp(
-  timestamp?: string,
-  formatOpts?: Intl.DateTimeFormatOptions | undefined,
-  opts?: LocaleOptions | undefined
-) {
-  if (timestamp === undefined) {
-    return "Unknown"
-  }
-
-  return DateTime.fromISO(timestamp).toLocaleString(formatOpts, opts)
-}
-
 function getBadge(eventGroup: EventGroup) {
   if (isInProgress(eventGroup)) {
     if (isTimedOut(eventGroup)) {
@@ -152,42 +139,4 @@ function getFormattedTime(eventGroup: EventGroup) {
   }
 
   return null
-}
-
-export function sortEventGroupsByTime(a: EventGroup, b: EventGroup) {
-  const aStop = a.success || a.failure
-  const bStop = b.success || b.failure
-
-  const aStartTS = a.start ? DateTime.fromISO(a.start.timestamp) : DateTime.fromMillis(0)
-  const bStartTS = b.start ? DateTime.fromISO(b.start.timestamp) : DateTime.fromMillis(0)
-
-  const aStopTS = aStop ? DateTime.fromISO(aStop.timestamp) : aStartTS
-  const bStopTS = bStop ? DateTime.fromISO(bStop.timestamp) : bStartTS
-
-  if (aStartTS < bStartTS) {
-    return 1
-  }
-
-  if (aStopTS < bStopTS) {
-    return 1
-  }
-
-  if (aStopTS > bStopTS) {
-    return -1
-  }
-
-  return 0
-}
-
-export function isTimedOut(eventGroup: EventGroup) {
-  const startTs = eventGroup.start?.timestamp ? DateTime.fromISO(eventGroup.start?.timestamp) : DateTime.fromMillis(0)
-  return (
-    eventGroup.success === undefined &&
-    eventGroup.failure === undefined &&
-    startTs.diffNow().negate() > Configuration.app.eventTimeout
-  )
-}
-
-export function isInProgress(eventGroup: EventGroup) {
-  return !eventGroup.success && !eventGroup.failure
 }

@@ -1,10 +1,4 @@
-import {
-  IconBrandGithub,
-  IconCircleCheckFilled,
-  IconCircleXFilled,
-  IconExternalLink,
-  IconHelpCircleFilled,
-} from "@tabler/icons-react"
+import { IconBrandGithub, IconCircleCheckFilled, IconCircleXFilled, IconHelpCircleFilled } from "@tabler/icons-react"
 import {
   Button,
   Card,
@@ -21,12 +15,12 @@ import {
   Tracker,
 } from "@tremor/react"
 import { DateTime } from "luxon"
-import { Link } from "react-router-dom"
-
-import { formatTimestamp, sortEventGroupsByTime } from "app/deliverable/events"
 import { useMemo } from "react"
+import { Link } from "react-router-dom"
+import urlJoin from "url-join"
+
 import { EventGroup, StageInfoMap } from "types"
-import { titlecase } from "utils"
+import { formatTimestamp, sortEventGroupsByTime, titlecase } from "utils"
 
 interface TrackerDatum {
   color: Color
@@ -93,8 +87,12 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
             <List className="mt-4">
               <ListItem>
                 <Flex>
-                  <Text>Current installed version</Text>
-                  <Text>{info.latestVersion}</Text>
+                  <Text>Current version</Text>
+                  <Link to={info.repository ? urlJoin(info.repository, `./tree/v${info.latestVersion}`) : ""}>
+                    <Button icon={IconBrandGithub} variant="light">
+                      {info.latestVersion}
+                    </Button>
+                  </Link>
                 </Flex>
               </ListItem>
               <ListItem>
@@ -103,21 +101,21 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
                   <Text>{DateTime.fromISO(info.timestamp).toLocaleString()}</Text>
                 </Flex>
               </ListItem>
-              <ListItem>
+              {/* <ListItem>
                 <Flex>
                   <Text>Configuration</Text>
                   <Link to="">
                     <Text color="blue">LATEST</Text>
                   </Link>
                 </Flex>
-              </ListItem>
+              </ListItem> */}
             </List>
           </Card>
         ))}
       </Grid>
       <Divider className="lg:hidden" />
       <Grid numItemsMd={2} className="gap-6 lg:mt-6">
-        <Card>
+        {/* <Card>
           <Flex justifyContent="start" className="space-x-6" alignItems="start">
             <Icon
               icon={IconBrandGithub}
@@ -142,7 +140,7 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
               </Button>
             </Link>
           </Flex>
-        </Card>
+        </Card> */}
         <Card>
           <Flex>
             <Title className="w-full">Builds overview</Title>

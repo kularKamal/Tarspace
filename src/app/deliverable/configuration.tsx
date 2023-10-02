@@ -1,19 +1,18 @@
 import { Text as CMText, Extension } from "@codemirror/state"
 import { CouchdbDoc, URL_SEPARATOR } from "@iotinga/ts-backpack-couchdb-client"
-import { IconDeviceFloppy, IconPaperclip, IconPencil } from "@tabler/icons-react"
-import { Button, Card, Flex, Tab, TabGroup, TabList, TabPanel, TabPanels, Text, Title } from "@tremor/react"
+import { IconCloudDownload } from "@tabler/icons-react"
+import { Button, Card, Flex, Select, SelectItem, Text } from "@tremor/react"
 import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror"
 import axios from "axios"
 import { EditorView } from "codemirror"
 import { DateTime } from "luxon"
-import { MouseEvent, useContext, useEffect, useRef, useState } from "react"
+import { MouseEvent, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { useEventListener } from "usehooks-ts"
 
-import { AttachmentDownloader, VFSBrowser } from "components/VFSBrowser"
 import { Configuration } from "config"
 import { AppContext, AuthContext } from "contexts"
 import { ConfigurationDoc } from "types"
-import { getCodeMirrorMode } from "utils"
+import { getCodeMirrorMode, titlecase } from "utils"
 
 const EXT: Extension[] = [
   EditorView.theme(
@@ -47,34 +46,32 @@ const EXT: Extension[] = [
       dark: false,
     }
   ),
-  getCodeMirrorMode("a.json") ?? [],
 ]
-
-export enum ConfigurationFormat {
-  JSON = "json",
-  YAML = "yaml",
-}
 
 export type ConfigurationEditorProps = {
   customer: string
   project: string
   deliverable: string
+  stages: string[]
 }
-export function ConfigurationEditor({ customer, project, deliverable }: ConfigurationEditorProps) {
+export function ConfigurationEditor({ customer, project, deliverable, stages }: ConfigurationEditorProps) {
   const { CouchdbManager } = useContext(AppContext)
   const { username, userDb } = useContext(AuthContext)
   const designDoc = username as string
 
   const editor = useRef<ReactCodeMirrorRef>(null)
   const [extensions, setExtensions] = useState<Extension[]>(EXT)
-  const [mode, setMode] = useState("javascript")
   const [isSaving, setIsSaving] = useState(false)
 
+  const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [configDoc, setConfigDoc] = useState<ConfigurationDoc | null>(null)
-  const configString = JSON.stringify(configDoc?.configuration || {}, null, 2)
 
   const [baseText, setBaseText] = useState<CMText>(CMText.empty)
   const [currentText, setCurrentText] = useState(baseText)
+  const configString = baseText.toString()
+
+  const attachment = configDoc && configDoc._attachments ? Object.entries(configDoc._attachments)[0] : null
+  const isZipConfig = attachment ? attachment[0].endsWith(".zip") : false
 
   useEventListener("beforeunload", e => {
     if (!currentText || !baseText) {
@@ -87,8 +84,10 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
     }
   })
 
+  useEffect(() => setSelectedStage(stages[0]), [stages])
+
   useEffect(() => {
-    if (!userDb) {
+    if (!userDb || !selectedStage) {
       return
     }
 
@@ -96,7 +95,7 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
       .design(designDoc)
       .view<(string | undefined)[], ConfigurationDoc>("configurations-latest", {
         reduce: true,
-        key: [customer, project, deliverable, "production"],
+        key: [customer, project, deliverable, selectedStage],
       })
       .then(resp => {
         if (resp.rows.length === 0) {
@@ -115,27 +114,77 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
       })
       .then(resp => {
         setConfigDoc(resp)
-        const text = CMText.of(configString.split("\n"))
+      })
+      .catch(_ => {})
+  }, [CouchdbManager, customer, deliverable, designDoc, project, selectedStage, userDb])
+
+  const downloadAttachment = useCallback(
+    (filename: string) => {
+      if (!configDoc) {
+        return Promise.reject()
+      }
+
+      // HACK: remove this when the couchdb client supports attachments
+      const path = [
+        `${Configuration.couchdb.protocol}://${Configuration.couchdb.host}:${Configuration.couchdb.port}`,
+        userDb,
+        encodeURIComponent(configDoc._id ?? ""),
+        filename,
+      ].join(URL_SEPARATOR)
+
+      return axios
+        .get(path, {
+          responseType: "blob",
+          withCredentials: true,
+        })
+        .then(resp => resp.data as Blob)
+    },
+    [configDoc, userDb]
+  )
+
+  useEffect(() => {
+    if (!configDoc || !configDoc._attachments) {
+      return
+    }
+
+    const filename = Object.keys(configDoc._attachments)[0]
+
+    downloadAttachment(filename)
+      .then(data => {
+        if (!data) {
+          return
+        }
+
+        return data.text()
+      })
+      .then(textData => {
+        if (!textData) {
+          return
+        }
+
+        setExtensions(old => old.concat(getCodeMirrorMode(filename) ?? []))
+
+        const text = CMText.of(textData.split("\n"))
         setBaseText(text)
         setCurrentText(text)
       })
       .catch(_ => {})
-  }, [CouchdbManager, configString, customer, deliverable, designDoc, project, userDb])
+  }, [configDoc, configString, downloadAttachment, userDb])
 
   async function handleSave(event: MouseEvent<HTMLButtonElement>) {
-    if (!userDb || !configDoc) {
+    if (!userDb || !configDoc || !selectedStage) {
       return
     }
 
     setIsSaving(true)
     const now = DateTime.now()
     const newConfig: ConfigurationDoc = {
-      _id: `configuration:${project}@${customer}/${deliverable}/production/${now.toMillis()}`,
+      _id: `configuration:${project}@${customer}/${deliverable}/${selectedStage}/${now.toMillis()}`,
       type: "configuration",
       configuration: JSON.parse(currentText.toString()),
       project: [project, customer].join("@"),
       deliverable: deliverable,
-      stage: "production",
+      stage: selectedStage,
       timestamp: now.toISO() as string,
     }
     await CouchdbManager.db(userDb)
@@ -146,7 +195,7 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
       })
   }
 
-  if (!configDoc) {
+  if (!configDoc || !configDoc.configuration || !selectedStage || !attachment) {
     return (
       <Card className="mt-6 h-1/3">
         <Text>Empty</Text>
@@ -154,77 +203,75 @@ export function ConfigurationEditor({ customer, project, deliverable }: Configur
     )
   }
 
-  // HACK: remove this when the couchd client supports attachments
-  const downloader: AttachmentDownloader = async (attachments, filename) => {
-    const path = [
-      `${Configuration.couchdb.protocol}://${Configuration.couchdb.host}:${Configuration.couchdb.port}`,
-      userDb,
-      encodeURIComponent(configDoc._id ?? ""),
-      filename,
-    ].join(URL_SEPARATOR)
-
-    return axios
-      .get(path, {
-        responseType: "blob",
-        withCredentials: true,
-      })
-      .then(resp => resp.data as Blob)
-  }
-
   return (
     <Card className="mt-6 p-0 min-h-[20vh]">
-      <TabGroup>
-        <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background dark:bg-dark-tremor-background border-b-tremor-border dark:border-b-dark-tremor-background-subtle border-b rounded-t-tremor-default">
-          <Title className="ml-6">Production</Title>
-          <TabList className="mx-6" variant="solid">
-            <Tab icon={IconPencil}>Configuration</Tab>
-            <Tab icon={IconPaperclip}>Attachments</Tab>
-          </TabList>
+      <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background dark:bg-dark-tremor-background border-b-tremor-border dark:border-b-dark-tremor-background-subtle border-b rounded-t-tremor-default">
+        <Select className="ml-6 w-auto" value={selectedStage} onValueChange={value => setSelectedStage(value)}>
+          {stages.map(stage => (
+            <SelectItem key={stage} value={stage}>
+              {titlecase(stage)}
+            </SelectItem>
+          ))}
+        </Select>
+        {/* <Button
+          icon={IconDeviceFloppy}
+          onClick={handleSave}
+          variant="secondary"
+          size="xs"
+          disabled={currentText.eq(baseText)}
+          tooltip={currentText.eq(baseText) ? "No changes to save" : undefined}
+          loading={isSaving}
+        >
+          Save
+        </Button> */}
+      </Flex>
+      {isZipConfig ? (
+        <Flex className="p-8 space-x-6" alignItems="center">
+          <Text className="w-full">{attachment[0]}</Text>
+          {/* <Button variant="light" icon={IconCloudUpload} size="lg">
+            Upload
+          </Button> */}
           <Button
-            icon={IconDeviceFloppy}
-            onClick={handleSave}
-            variant="secondary"
-            size="xs"
-            disabled={currentText.eq(baseText)}
-            tooltip={currentText.eq(baseText) ? "No changes to save" : undefined}
-            loading={isSaving}
+            variant="light"
+            icon={IconCloudDownload}
+            size="lg"
+            onClick={_ => {
+              if (!configDoc._attachments) {
+                return
+              }
+
+              const filename = Object.keys(configDoc._attachments)[0]
+              downloadAttachment(filename).then(data => {
+                const a = document.createElement("a")
+                const url = window.URL.createObjectURL(data)
+                a.href = url
+                a.download = filename
+                a.click()
+                window.URL.revokeObjectURL(url)
+              })
+            }}
           >
-            Save
+            Download
           </Button>
         </Flex>
-        <TabPanels>
-          <TabPanel className="mt-0">
-            {/* <Select placeholder="Select format..." className="z-10">
-                <SelectItem value="JSON" />
-                <SelectItem value="YAML" />
-              </Select> */}
-
-            <CodeMirror
-              height="100%"
-              width="100%"
-              value={configString}
-              extensions={extensions}
-              theme="light"
-              ref={editor}
-              onChange={(_, viewUpdate) => {
-                if (viewUpdate.docChanged) {
-                  setCurrentText(viewUpdate.state.doc)
-                }
-              }}
-              editable={false}
-              autoFocus
-              indentWithTab
-            />
-          </TabPanel>
-          <TabPanel className="h-[60vh] mt-0 p-4">
-            <VFSBrowser
-              attachments={configDoc._attachments ?? {}}
-              rootFolderName={deliverable}
-              downloader={downloader}
-            />
-          </TabPanel>
-        </TabPanels>
-      </TabGroup>
+      ) : (
+        <CodeMirror
+          height="100%"
+          width="100%"
+          value={configString}
+          extensions={extensions}
+          theme="light"
+          ref={editor}
+          onChange={(_, viewUpdate) => {
+            if (viewUpdate.docChanged) {
+              setCurrentText(viewUpdate.state.doc)
+            }
+          }}
+          editable={false}
+          autoFocus
+          indentWithTab
+        />
+      )}
     </Card>
   )
 }

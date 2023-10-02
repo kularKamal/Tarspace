@@ -76,7 +76,7 @@ type FileRowProps = {
 function FileRow({ filename, url }: FileRowProps) {
   const [size, setSize] = useState(0)
   const [type, setType] = useState("-")
-  const [err, setErr] = useState(false)
+  const [broken, setBroken] = useState(false)
 
   useEffect(() => {
     axios
@@ -85,7 +85,7 @@ function FileRow({ filename, url }: FileRowProps) {
         setSize(parseInt(resp.headers["content-length"]))
         setType(resp.headers["content-type"])
       })
-      .catch(_ => setErr(true))
+      .catch(_ => setBroken(true))
   }, [url])
 
   return (
@@ -97,7 +97,7 @@ function FileRow({ filename, url }: FileRowProps) {
         <Text className="font-mono">{type}</Text>
       </TableCell>
       <TableCell>
-        <Text>{err ? "-" : humanizeFileSize(size)}</Text>
+        <Text>{broken ? "-" : humanizeFileSize(size)}</Text>
       </TableCell>
       <TableCell className="">
         <Link to={url}>
@@ -105,8 +105,8 @@ function FileRow({ filename, url }: FileRowProps) {
             variant="light"
             icon={IconCloudDownload}
             size="lg"
-            disabled={err}
-            tooltip={err ? "Broken link" : undefined}
+            disabled={broken}
+            tooltip={broken ? "Broken link" : undefined}
           >
             Download
           </Button>

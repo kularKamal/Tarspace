@@ -26,12 +26,12 @@ import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
 import { ConfigurationEditor } from "app/deliverable/configuration"
-import { EventState, EventStateBadges, EventStateMessages, isInProgress, isTimedOut } from "app/deliverable/events"
+import { EventState, EventStateBadges, EventStateMessages } from "app/deliverable/events"
 import { VersionEvents } from "app/deliverable/versions"
 import { Breadcrumbs } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
-import { isStageName, titlecase } from "utils"
+import { isInProgress, isStageName, isTimedOut, titlecase } from "utils"
 
 const DetailsView = lazy(() => import("app/deliverable/details"))
 const EventsView = lazy(() => import("app/deliverable/events"))
@@ -146,16 +146,12 @@ function Page() {
 
   return (
     <>
-      <Flex>
-        <div>
-          <Metric className="text-left">Deliverable</Metric>
-          <Text className="text-left">{deliverable}</Text>
-        </div>
+      <Flex flexDirection="col" alignItems="start" className="space-y-4 mb-6">
         <Breadcrumbs ignoreLast={tab !== undefined} />
+        <Metric className="text-left">Deliverable</Metric>
       </Flex>
 
       <TabGroup
-        className="mt-6"
         defaultIndex={Math.max(
           Object.values(Tabs).findIndex(t => t === tab),
           0
@@ -205,7 +201,12 @@ function Page() {
           </CustomTabPanel>
           <CustomTabPanel name={Tabs.CONFIGURATION} currentTab={selectedTab}>
             {customer && project && deliverable ? (
-              <ConfigurationEditor customer={customer} project={project} deliverable={deliverable} />
+              <ConfigurationEditor
+                customer={customer}
+                project={project}
+                deliverable={deliverable}
+                stages={Object.keys(lastPublishedVersions)}
+              />
             ) : null}
           </CustomTabPanel>
         </TabPanels>

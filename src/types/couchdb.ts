@@ -32,7 +32,7 @@ export type ConfigurationDoc = CouchdbDoc & {
   deliverable: string
   stage: string
   timestamp: string
-  configuration: object
+  configuration: string | null
 }
 
 export type PublishStep = {
