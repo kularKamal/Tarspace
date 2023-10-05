@@ -1,8 +1,9 @@
-import { Card, Flex, Grid, List, ListItem, Text, Title } from "@tremor/react"
+import { Flex, Grid, List, ListItem, Text, Title } from "@tremor/react"
 import { useContext, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { PageHeading } from "components"
+import { ClickableCard } from "components/ClickableCard"
 import { AppContext, AuthContext } from "contexts"
 
 function Page() {
@@ -63,7 +64,7 @@ function Page() {
       <Grid numItemsMd={3} className="gap-6">
         {Object.entries(projects).map(([project, total]) => (
           <Link to={project} key={project}>
-            <Card className="w-full hover:ring transition transition-all">
+            <ClickableCard>
               <Title>{project}</Title>
               <List className="mt-4">
                 <ListItem>
@@ -73,7 +74,7 @@ function Page() {
                   </Flex>
                 </ListItem>
               </List>
-            </Card>
+            </ClickableCard>
           </Link>
         ))}
       </Grid>

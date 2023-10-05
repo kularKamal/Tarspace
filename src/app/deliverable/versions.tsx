@@ -38,7 +38,7 @@ function VersionsView({ events }: VersionViewProps) {
             <Flex flexDirection="col" alignItems="start" className="mt-6 sticky inset-0 top-6">
               <Title>{version}</Title>
               <Link to={e[0].repository ? urlJoin(e[0].repository, `./tree/v${version}`) : ""} className="mt-2 ml-1">
-                <Button icon={IconBrandGithub} variant="light">
+                <Button icon={IconBrandGithub} variant="light" tooltip="See the source code for this version">
                   Github
                 </Button>
               </Link>

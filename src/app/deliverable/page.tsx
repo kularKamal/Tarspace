@@ -1,10 +1,9 @@
 import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
-import { IconAdjustments, IconFileDescription, IconHistory, IconPackage, IconVersions } from "@tabler/icons-react"
+import { IconAdjustments, IconFileDescription, IconHistory, IconVersions } from "@tabler/icons-react"
 import {
   Accordion,
   AccordionBody,
   AccordionHeader,
-  Badge,
   Card,
   DateRangePicker,
   DateRangePickerValue,
@@ -17,10 +16,9 @@ import {
   TabPanel,
   TabPanels,
   Text,
-  Title,
 } from "@tremor/react"
 import { DateTime } from "luxon"
-import { ElementType, PropsWithChildren, lazy, useContext, useEffect, useState } from "react"
+import { ElementType, PropsWithChildren, lazy, useContext, useEffect, useMemo, useState } from "react"
 import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
@@ -33,14 +31,12 @@ import { isInProgress, isStageName, isTimedOut, titlecase } from "utils"
 
 const DetailsView = lazy(() => import("app/deliverable/details"))
 const EventsView = lazy(() => import("app/deliverable/events"))
-const FilesView = lazy(() => import("app/deliverable/files"))
 const VersionsView = lazy(() => import("app/deliverable/versions"))
 
 enum Tabs {
   DETAILS = "details",
   VERSIONS = "versions",
   EVENTS = "events",
-  FILES = "files",
   CONFIGURATION = "configuration",
 }
 
@@ -48,7 +44,6 @@ const TAB_ICONS: Record<keyof typeof Tabs, ElementType> = {
   DETAILS: IconFileDescription,
   VERSIONS: IconVersions,
   EVENTS: IconHistory,
-  FILES: IconPackage,
   CONFIGURATION: IconAdjustments,
 }
 
@@ -116,6 +111,12 @@ function Page() {
           setNotFound(true)
         }
       })
+  }, [CouchdbManager, customer, deliverable, designDoc, project, userDb])
+
+  useEffect(() => {
+    if (!userDb) {
+      return
+    }
 
     CouchdbManager.db(userDb)
       .design(designDoc)
@@ -140,7 +141,9 @@ function Page() {
         })
         setLastPublishedVersions(map)
       })
-  }, [CouchdbManager, customer, userDb, deliverable, designDoc, project])
+  }, [CouchdbManager, customer, deliverable, designDoc, project, userDb])
+
+  const trackerEvents = useMemo(() => eventsList.filter(eg => eg.type === "build"), [eventsList])
 
   return (
     <>
@@ -168,31 +171,13 @@ function Page() {
         </TabList>
         <TabPanels>
           <CustomTabPanel name={Tabs.DETAILS} currentTab={selectedTab}>
-            <DetailsView stages={lastPublishedVersions} trackerEvents={eventsList.filter(eg => eg.type === "build")} />
+            <DetailsView stages={lastPublishedVersions} trackerEvents={trackerEvents} />
           </CustomTabPanel>
           <CustomTabPanel name={Tabs.VERSIONS} currentTab={selectedTab}>
             <VersionsView events={events} />
           </CustomTabPanel>
           <CustomTabPanel name={Tabs.EVENTS} currentTab={selectedTab}>
             <EventsPanel eventsList={eventsList} />
-          </CustomTabPanel>
-          <CustomTabPanel name={Tabs.FILES} currentTab={selectedTab}>
-            {customer && project && deliverable
-              ? Object.entries(lastPublishedVersions).map(([stageName, info]) => (
-                  <Card className="mt-6" key={stageName}>
-                    <Flex justifyContent="start" className="space-x-2 mb-6">
-                      <Title>{titlecase(stageName)}</Title>
-                      <Badge color="gray">{info.latestVersion}</Badge>
-                    </Flex>
-                    <FilesView
-                      customer={customer}
-                      project={project}
-                      deliverable={deliverable}
-                      version={info.latestVersion}
-                    />
-                  </Card>
-                ))
-              : null}
           </CustomTabPanel>
           <CustomTabPanel name={Tabs.CONFIGURATION} currentTab={selectedTab}>
             {customer && project && deliverable ? (

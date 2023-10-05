@@ -20,6 +20,7 @@ module.exports = {
           background: {
             muted: "#f9fafb", // gray-50
             subtle: "#f3f4f6", // gray-100
+            skeleton: "#e5e7eb", // gray-200
             DEFAULT: "#ffffff", // white
             emphasis: "#374151", // gray-700
           },
@@ -49,6 +50,7 @@ module.exports = {
           },
           background: {
             muted: "#131A2B", // custom
+            skeleton: "#374151", // gray-700
             subtle: "#1f2937", // gray-800
             DEFAULT: "#111827", // gray-900
             emphasis: "#d1d5db", // gray-300
@@ -88,6 +90,12 @@ module.exports = {
         "tremor-default": ["0.875rem", { lineHeight: "1.25rem" }],
         "tremor-title": ["1.125rem", { lineHeight: "1.75rem" }],
         "tremor-metric": ["1.875rem", { lineHeight: "2.25rem" }],
+      },
+      height: {
+        "tremor-label": "0.75rem",
+        "tremor-default": "1.25rem",
+        "tremor-title": "1.75rem",
+        "tremor-metric": "2.25rem",
       },
     },
   },

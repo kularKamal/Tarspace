@@ -1,4 +1,10 @@
-import { IconBrandGithub, IconCircleCheckFilled, IconCircleXFilled, IconHelpCircleFilled } from "@tabler/icons-react"
+import {
+  IconBrandGithub,
+  IconCircleCheckFilled,
+  IconCircleXFilled,
+  IconCloudDownload,
+  IconHelpCircleFilled,
+} from "@tabler/icons-react"
 import {
   Button,
   Card,
@@ -15,12 +21,16 @@ import {
   Tracker,
 } from "@tremor/react"
 import { DateTime } from "luxon"
-import { useMemo } from "react"
-import { Link } from "react-router-dom"
+import { useContext, useEffect, useMemo, useState } from "react"
+import { Link, useParams } from "react-router-dom"
 import urlJoin from "url-join"
 
-import { EventGroup, StageInfoMap } from "types"
+import { Skeleton } from "components"
+import { AppContext, AuthContext } from "contexts"
+import { DeliverableDoc, EventGroup, StageInfoMap } from "types"
 import { formatTimestamp, sortEventGroupsByTime, titlecase } from "utils"
+
+const MAX_TRACKED_EVENTS = 36
 
 interface TrackerDatum {
   color: Color
@@ -41,7 +51,7 @@ const TrackerData: Record<string, TrackerDatum> = {
     tooltip: "Timed out",
   },
   EMPTY: {
-    color: "gray",
+    color: "neutral",
   },
 }
 
@@ -50,15 +60,51 @@ export type DetailsViewProps = {
   trackerEvents: EventGroup[]
 }
 
+type VersionUploads = Record<string, string>
+
 function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
+  const { customer, project, deliverable } = useParams()
+
+  const { CouchdbManager } = useContext(AppContext)
+  const { username, userDb } = useContext(AuthContext)
+  const designDoc = username as string
+
+  const [uploads, setUploads] = useState<VersionUploads>({})
+
+  useEffect(() => {
+    if (!userDb) {
+      return
+    }
+
+    CouchdbManager.db(userDb)
+      .design(designDoc)
+      .viewQueries<(string | undefined)[], DeliverableDoc>("deliverables", {
+        queries: Object.values(stages).map(stageInfo => ({
+          reduce: false,
+          include_docs: true,
+          start_key: [customer, project, deliverable, stageInfo.latestVersion],
+          end_key: [customer, project, deliverable, stageInfo.latestVersion],
+        })),
+      })
+      .then(resp => {
+        const map: VersionUploads = {}
+        resp.results
+          .flatMap(res => (res.rows[0].doc ? [res.rows[0].doc] : []))
+          .forEach(doc => doc.uploads && (map[doc.version] = Object.values(doc.uploads)[0]))
+
+        setUploads(map)
+      })
+  }, [CouchdbManager, customer, userDb, deliverable, designDoc, project, stages])
+
   const sortedEvents = useMemo(
-    () => trackerEvents.sort(sortEventGroupsByTime).slice(0, Math.min(trackerEvents.length, 36)).reverse(),
+    () =>
+      trackerEvents.sort(sortEventGroupsByTime).slice(0, Math.min(trackerEvents.length, MAX_TRACKED_EVENTS)).reverse(),
     [trackerEvents]
   )
 
   const trackerData: TrackerDatum[] = useMemo(
     () =>
-      new Array(36 - sortedEvents.length).fill(TrackerData.EMPTY).concat(
+      new Array(MAX_TRACKED_EVENTS - sortedEvents.length).fill(TrackerData.EMPTY).concat(
         sortedEvents.map(eg => {
           const tooltip = eg.start?.timestamp && formatTimestamp(eg.start.timestamp, DateTime.DATETIME_MED)
           if (eg.failure) {
@@ -78,69 +124,49 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
   const firstTs = sortedEvents.at(0)?.start?.timestamp
   const lastTs = sortedEvents.at(sortedEvents.length - 1)?.start?.timestamp
 
+  const stagesEntries = useMemo(() => Object.entries(stages), [stages])
+
   return (
     <>
-      <Grid numItemsMd={2} numItemsLg={Math.min(3, Object.entries(stages).length)} className="gap-6 mt-6">
-        {Object.entries(stages).map(([stageName, info]) => (
-          <Card key={stageName}>
-            <Metric>{titlecase(stageName)}</Metric>
-            <List className="mt-4">
-              <ListItem>
-                <Flex>
-                  <Text>Current version</Text>
-                  <Link to={info.repository ? urlJoin(info.repository, `./tree/v${info.latestVersion}`) : ""}>
-                    <Button icon={IconBrandGithub} variant="light">
-                      {info.latestVersion}
-                    </Button>
-                  </Link>
-                </Flex>
-              </ListItem>
-              <ListItem>
-                <Flex>
-                  <Text>Last update date</Text>
-                  <Text>{DateTime.fromISO(info.timestamp).toLocaleString()}</Text>
-                </Flex>
-              </ListItem>
-              {/* <ListItem>
-                <Flex>
-                  <Text>Configuration</Text>
-                  <Link to="">
-                    <Text color="blue">LATEST</Text>
-                  </Link>
-                </Flex>
-              </ListItem> */}
-            </List>
-          </Card>
-        ))}
+      <Grid numItemsMd={2} numItemsLg={Math.min(3, stagesEntries.length)} className="gap-6 mt-6">
+        {stagesEntries.length === 0 ? (
+          <>
+            <EmptyStageCard />
+            <EmptyStageCard />
+          </>
+        ) : (
+          stagesEntries.map(([stageName, info]) => (
+            <Card key={stageName}>
+              <Flex flexDirection="row" justifyContent="between">
+                <Metric>{titlecase(stageName)}</Metric>
+                <Link to={uploads[info.latestVersion]}>
+                  <Button icon={IconCloudDownload} variant="light" size="lg" tooltip={`Download deliverable`} />
+                </Link>
+              </Flex>
+              <List className="mt-4">
+                <ListItem>
+                  <Flex>
+                    <Text>Current version</Text>
+                    <Link to={info.repository ? urlJoin(info.repository, `./tree/v${info.latestVersion}`) : ""}>
+                      <Button icon={IconBrandGithub} variant="light" tooltip="See the source code for this release">
+                        {info.latestVersion}
+                      </Button>
+                    </Link>
+                  </Flex>
+                </ListItem>
+                <ListItem>
+                  <Flex>
+                    <Text>Last update date</Text>
+                    <Text>{formatTimestamp(info.timestamp, DateTime.DATETIME_MED)}</Text>
+                  </Flex>
+                </ListItem>
+              </List>
+            </Card>
+          ))
+        )}
       </Grid>
       <Divider className="lg:hidden" />
       <Grid numItemsMd={2} className="gap-6 lg:mt-6">
-        {/* <Card>
-          <Flex justifyContent="start" className="space-x-6" alignItems="start">
-            <Icon
-              icon={IconBrandGithub}
-              variant="light"
-              size="lg"
-              color="blue"
-              className="bg-tremor-brand-muted dark:bg-dark-tremor-brand-muted text-tremor-brand dark:text-dark-tremor-brand"
-            />
-            <div>
-              <Title className="">Repository</Title>
-              <Text className="mt-1">The source code for this deliverable can be found at the following link.</Text>
-            </div>
-          </Flex>
-          <Flex className="mt-6 pt-4 border-t dark:border-t-dark-tremor-background-subtle">
-            <Link
-              to={(Object.values(stages)[0] && Object.values(stages)[0].repository) || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button size="xs" variant="light" icon={IconExternalLink} iconPosition="right">
-                Visit
-              </Button>
-            </Link>
-          </Flex>
-        </Card> */}
         <Card>
           <Flex>
             <Title className="w-full">Builds overview</Title>
@@ -159,11 +185,7 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
               </Flex>
             </>
           ) : (
-            <Flex justifyContent="around" className="h-full">
-              <Flex flexDirection="col" className="h-full w-1/4" justifyContent="center">
-                <Text>No events found</Text>
-              </Flex>
-            </Flex>
+            <EmptyTracker />
           )}
         </Card>
       </Grid>
@@ -172,3 +194,39 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
 }
 
 export default DetailsView
+
+function EmptyTracker() {
+  return (
+    <>
+      <Tracker data={new Array(MAX_TRACKED_EVENTS).fill(TrackerData.EMPTY)} className="mt-2" />
+      <Flex className="mt-2">
+        <Skeleton className="h-tremor-default w-20" />
+        <Skeleton className="h-tremor-default w-20" />
+      </Flex>
+    </>
+  )
+}
+
+function EmptyStageCard() {
+  return (
+    <Card>
+      <Flex flexDirection="row" justifyContent="between">
+        <Skeleton className="h-tremor-metric w-32" />
+      </Flex>
+      <List className="mt-4">
+        <ListItem>
+          <Flex>
+            <Skeleton className="h-tremor-default w-32" />
+            <Skeleton className="h-tremor-title w-32" />
+          </Flex>
+        </ListItem>
+        <ListItem>
+          <Flex>
+            <Skeleton className="h-tremor-default w-32" />
+            <Skeleton className="h-tremor-default w-32" />
+          </Flex>
+        </ListItem>
+      </List>
+    </Card>
+  )
+}

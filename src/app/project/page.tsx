@@ -1,8 +1,9 @@
-import { Badge, Card, Flex, Grid, Table, TableBody, TableCell, TableRow, Text, Title } from "@tremor/react"
+import { Badge, Flex, Grid, Table, TableBody, TableCell, TableRow, Text, Title } from "@tremor/react"
 import { useContext, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
-import { EventState, EventStateBadges, PageHeading } from "components"
+import { ClickableCard, EventState, EventStateBadges, PageHeading } from "components"
+import { Skeleton } from "components/Skeleton"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, StageInfoMap } from "types"
 import { formatTimestamp, isStageName, titlecase } from "utils"
@@ -22,8 +23,9 @@ function Page() {
   const { project, customer } = useParams()
 
   const [deliverables, setDeliverables] = useState<string[]>([])
-  const [lastPublishedVersions, setLastPublishedVersions] = useState<Record<string, StageInfoMap>>({})
-  const [lastBuildState, setLastBuildState] = useState<LastBuildState>({})
+  const [lastPublishedVersions, setLastPublishedVersions] = useState<Record<string, StageInfoMap> | null>(null)
+  const [lastBuildState, setLastBuildState] = useState<LastBuildState | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const [notFound, setNotFound] = useState(false)
   const navigate = useNavigate()
@@ -112,6 +114,7 @@ function Page() {
 
         resp.results
           .flatMap(res => res.rows[0])
+          .filter(row => row !== undefined)
           .forEach(row => {
             const doc = row.doc as EventDoc
             map[doc.target] = [doc.event as EventState, formatTimestamp(doc.timestamp)]
@@ -128,36 +131,47 @@ function Page() {
       <Grid numItemsMd={2} className="gap-6">
         {deliverables.map(deliverable => (
           <Link to={deliverable} key={deliverable}>
-            <Card className="w-full hover:ring transition transition-all">
+            <ClickableCard>
               <Flex>
                 <Title>{deliverable}</Title>
-                {lastBuildState[deliverable] && (
-                  <div className="inline-flex items-center space-x-2">
-                    {EventStateBadges[lastBuildState[deliverable][0]]}
-                    <Text>on {lastBuildState[deliverable][1]}</Text>
-                  </div>
+                {lastBuildState && Object.keys(lastBuildState).length > 0 ? (
+                  lastBuildState[deliverable] && (
+                    <div className="inline-flex items-center space-x-2">
+                      {EventStateBadges[lastBuildState[deliverable][0]]}
+                      <Text>on {lastBuildState[deliverable][1]}</Text>
+                    </div>
+                  )
+                ) : (
+                  <Skeleton className="h-tremor-default w-48" />
                 )}
               </Flex>
 
               <Table className="mt-4">
-                <TableBody>
-                  {lastPublishedVersions[deliverable] &&
-                    Object.entries(lastPublishedVersions[deliverable]).map(([stageName, stageInfo]) => (
-                      <TableRow key={stageName + deliverable}>
-                        <TableCell>
-                          <Text>{titlecase(stageName)}</Text>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge color="gray">{stageInfo.latestVersion}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Text>{formatTimestamp(stageInfo.timestamp)}</Text>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
+                {lastPublishedVersions && Object.keys(lastPublishedVersions).length > 0 ? (
+                  <TableBody>
+                    {lastPublishedVersions[deliverable] &&
+                      Object.entries(lastPublishedVersions[deliverable]).map(([stageName, stageInfo]) => (
+                        <TableRow key={stageName + deliverable}>
+                          <TableCell>
+                            <Text>{titlecase(stageName)}</Text>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge color="gray">{stageInfo.latestVersion}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Text>{formatTimestamp(stageInfo.timestamp)}</Text>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                ) : (
+                  <TableBody>
+                    <EmptyStageRow />
+                    <EmptyStageRow />
+                  </TableBody>
+                )}
               </Table>
-            </Card>
+            </ClickableCard>
           </Link>
         ))}
       </Grid>
@@ -166,3 +180,19 @@ function Page() {
 }
 
 export default Page
+
+function EmptyStageRow() {
+  return (
+    <TableRow>
+      <TableCell>
+        <Skeleton className="h-tremor-default w-32" />
+      </TableCell>
+      <TableCell className="text-center">
+        <Skeleton className="h-tremor-default w-32" />
+      </TableCell>
+      <TableCell className="text-right">
+        <Skeleton className="h-tremor-default w-32" />
+      </TableCell>
+    </TableRow>
+  )
+}

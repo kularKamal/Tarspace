@@ -94,14 +94,15 @@ export function Breadcrumbs(props: BreadcrumbsProps) {
 
 export type PageHeadingProps = BreadcrumbsProps & {
   title: string
+  hideBreadcrumbs?: boolean
 }
 
 export function PageHeading(props: PageHeadingProps) {
-  const { title, ...breadcrumProps } = props
+  const { title, hideBreadcrumbs = false, ...breadcrumProps } = props
 
   return (
     <Flex flexDirection="col" alignItems="start" className="space-y-4 mb-8">
-      <Breadcrumbs {...breadcrumProps} />
+      {!hideBreadcrumbs && <Breadcrumbs {...breadcrumProps} />}
       <Metric className="text-left">{title}</Metric>
     </Flex>
   )
