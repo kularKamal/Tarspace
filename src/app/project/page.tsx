@@ -1,42 +1,13 @@
-import { Badge, Card, Flex, Grid, Metric, Table, TableBody, TableCell, TableRow, Text, Title } from "@tremor/react"
+import { Badge, Card, Flex, Grid, Table, TableBody, TableCell, TableRow, Text, Title } from "@tremor/react"
 import { useContext, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
-import { Breadcrumbs } from "components"
+import { EventState, EventStateBadges, PageHeading } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, StageInfoMap } from "types"
 import { formatTimestamp, isStageName, titlecase } from "utils"
 
-// const ChevronIcon = () => <IconChevronRight height={18} />
-
-// const DeliverablesTable = (props: { deliverables: string[] }) => (
-//   <Table className="mt-6">
-//     <TableHead>
-//       <TableRow>
-//         <TableHeaderCell>ID</TableHeaderCell>
-//         <TableHeaderCell>ID</TableHeaderCell>
-//         <TableHeaderCell>ID</TableHeaderCell>
-//         <TableHeaderCell>ID</TableHeaderCell>
-//         <TableHeaderCell>ID</TableHeaderCell>
-//         <TableHeaderCell className="text-right"></TableHeaderCell>
-//       </TableRow>
-//     </TableHead>
-//     <TableBody>
-//       {props.deliverables.map((d, index) => (
-//         <TableRow key={index}>
-//           <TableCell>{d}</TableCell>
-//           <TableCell className="text-right">
-//             <Link to={d}>
-//               <Button size="xs" variant="light" icon={ChevronIcon} iconPosition="right">
-//                 See details
-//               </Button>
-//             </Link>
-//           </TableCell>
-//         </TableRow>
-//       ))}
-//     </TableBody>
-//   </Table>
-// )
+type LastBuildState = Record<string, [EventState, string]>
 
 function Page() {
   const { CouchdbManager } = useContext(AppContext)
@@ -52,6 +23,7 @@ function Page() {
 
   const [deliverables, setDeliverables] = useState<string[]>([])
   const [lastPublishedVersions, setLastPublishedVersions] = useState<Record<string, StageInfoMap>>({})
+  const [lastBuildState, setLastBuildState] = useState<LastBuildState>({})
 
   const [notFound, setNotFound] = useState(false)
   const navigate = useNavigate()
@@ -98,7 +70,7 @@ function Page() {
       })
       .then(resp => {
         const map: Record<string, StageInfoMap> = {}
-        // const a = resp.results.flatMap(res => res.rows)
+
         resp.results
           .flatMap(res => res.rows)
           .forEach(row => {
@@ -119,44 +91,66 @@ function Page() {
       })
   }, [CouchdbManager, customer, deliverables, designDoc, project, userDb])
 
+  useEffect(() => {
+    if (!userDb) {
+      return
+    }
+
+    CouchdbManager.db(userDb)
+      .design(designDoc)
+      .viewQueries<(string | undefined)[], EventDoc>("events-build", {
+        queries: deliverables.map(d => ({
+          reduce: false,
+          include_docs: true,
+          descending: true,
+          start_key: [customer, project, d, "\uffff"],
+          end_key: [customer, project, d],
+        })),
+      })
+      .then(resp => {
+        const map: LastBuildState = {}
+
+        resp.results
+          .flatMap(res => res.rows[0])
+          .forEach(row => {
+            const doc = row.doc as EventDoc
+            map[doc.target] = [doc.event as EventState, formatTimestamp(doc.timestamp)]
+          })
+
+        setLastBuildState(map)
+      })
+  }, [CouchdbManager, customer, deliverables, designDoc, project, userDb])
+
   return (
     <>
-      <Flex flexDirection="col" alignItems="start" className="space-y-4 mb-6">
-        <Breadcrumbs />
-        <Metric className="text-left">Project</Metric>
-      </Flex>
+      <PageHeading title="Project" />
 
       <Grid numItemsMd={2} className="gap-6">
         {deliverables.map(deliverable => (
           <Link to={deliverable} key={deliverable}>
             <Card className="w-full hover:ring transition transition-all">
-              <Title>{deliverable}</Title>
-              {/* <List className="mt-4">
-                {lastPublishedVersions[deliverable] &&
-                  Object.entries(lastPublishedVersions[deliverable]).map(([stageName, stageInfo]) => (
-                    // TODO: use a table?
-                    <ListItem key={stageName + deliverable}>
-                      <Flex>
-                        <Text>{titlecase(stageName)}</Text>
-                        <Text>{stageInfo.latestVersion}</Text>
-                        <Text>{formatTimestamp(stageInfo.timestamp)}</Text>
-                      </Flex>
-                    </ListItem>
-                  ))}
-              </List> */}
+              <Flex>
+                <Title>{deliverable}</Title>
+                {lastBuildState[deliverable] && (
+                  <div className="inline-flex items-center space-x-2">
+                    {EventStateBadges[lastBuildState[deliverable][0]]}
+                    <Text>on {lastBuildState[deliverable][1]}</Text>
+                  </div>
+                )}
+              </Flex>
+
               <Table className="mt-4">
                 <TableBody>
                   {lastPublishedVersions[deliverable] &&
                     Object.entries(lastPublishedVersions[deliverable]).map(([stageName, stageInfo]) => (
-                      // TODO: use a table?
                       <TableRow key={stageName + deliverable}>
                         <TableCell>
                           <Text>{titlecase(stageName)}</Text>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <Badge color="gray">{stageInfo.latestVersion}</Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">
                           <Text>{formatTimestamp(stageInfo.timestamp)}</Text>
                         </TableCell>
                       </TableRow>

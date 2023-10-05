@@ -1,45 +1,47 @@
 import { Logger } from "@iotinga/ts-backpack-common"
 import axios, { AxiosInstance } from "axios"
+import { Configuration } from "config"
+import { JobRequest } from "types"
 
-const logger = new Logger("CliAPI.ts")
+const logger = new Logger("CliAPI")
 
 export class CliAPI {
   private client: AxiosInstance
 
   constructor() {
     this.client = axios.create({
-      baseURL: "http://localhost:5000/api/v1",
+      baseURL: Configuration.backend.v1,
     })
   }
 
-  async signIn(username: string, password: string): Promise<boolean> {
-    try {
-      const response = await this.client.post(`/login`, { username, password })
-      if (response.status !== 200) {
-        throw new Error(`status is not 200, but ${response.status}`)
-      }
-    } catch (error) {
-      logger.warn("Error while signing in", error)
-      return false
-    }
-
-    logger.debug("Signed in")
-    return true
+  async uploadConfiguration(
+    project: string,
+    deliverable: string,
+    stage: string,
+    filename: string,
+    attachment_name: string,
+    attachment: Blob
+  ) {
+    await this.blobToBase64(attachment).then(base64 => {
+      this.client.put("/jobs", {
+        args: `delivery config ${project} ${deliverable} ${stage}`,
+        kwargs: {
+          content: `${filename}:${attachment_name}:${base64}`,
+        },
+      } as JobRequest)
+    })
   }
 
-  async signOut(): Promise<boolean> {
-    try {
-      const response = await this.client.delete(`/logout`)
-      if (response.status !== 200) {
-        throw new Error(`status is not 200, but ${response.status}`)
-      }
-    } catch (error) {
-      logger.warn("Error while signing out", error)
-      return false
-    }
+  async blobToBase64(blob: Blob) {
+    const reader = new FileReader()
+    reader.readAsDataURL(blob)
+    return new Promise(resolve => {
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string
 
-    logger.debug("Signed out")
-    return true
+        resolve(dataUrl.substring(dataUrl.indexOf(",") + 1))
+      }
+    })
   }
 
   onRequestError(callback: (error: unknown) => void) {

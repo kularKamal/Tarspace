@@ -1,46 +1,15 @@
 import { IconCalendar, IconClock, IconCubeSend, IconTool, Icon as TablerIcon } from "@tabler/icons-react"
-import {
-  Badge,
-  BadgeProps,
-  Flex,
-  Icon,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
-  Text,
-} from "@tremor/react"
+import { Flex, Icon, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Text } from "@tremor/react"
 import { DateTime } from "luxon"
-import { RefAttributes, memo, useMemo } from "react"
+import { memo, useMemo } from "react"
 
+import { getBadge } from "components"
 import { EventGroup, EventOperation } from "types"
-import { formatTimestamp, isInProgress, isTimedOut, sortEventGroupsByTime, titlecase } from "utils"
-
-export type EventState = "success" | "failure" | "inProgress" | "timedOut"
-
-export const EventStateMessages: Record<EventState, string> = {
-  inProgress: "In progress",
-  success: "Success",
-  failure: "Failure",
-  timedOut: "Timed out",
-}
-
-export const EventStateBadges: Record<EventState, JSX.Element> = {
-  success: BadgeFactory(EventStateMessages.success, { color: "emerald", size: "xl" }),
-  failure: BadgeFactory(EventStateMessages.failure, { color: "red", size: "xl" }),
-  inProgress: BadgeFactory(EventStateMessages.inProgress, { color: "yellow", size: "xl" }),
-  timedOut: BadgeFactory(EventStateMessages.timedOut, { color: "gray", size: "xl" }),
-}
+import { formatTimestamp, sortEventGroupsByTime, titlecase } from "utils"
 
 export const OPERATION_ICONS: Record<EventOperation, TablerIcon> = {
   build: IconTool,
   publish: IconCubeSend,
-}
-
-function BadgeFactory(text: string, props: BadgeProps & RefAttributes<HTMLSpanElement>) {
-  return <Badge {...props}>{text}</Badge>
 }
 
 export type EventsViewProps = {
@@ -116,19 +85,6 @@ const EventRow = memo<EventRowProps>(({ event }) => (
     </>
   </TableRow>
 ))
-
-function getBadge(eventGroup: EventGroup) {
-  if (isInProgress(eventGroup)) {
-    if (isTimedOut(eventGroup)) {
-      return EventStateBadges.timedOut
-    }
-    return EventStateBadges.inProgress
-  }
-  if (eventGroup.success) {
-    return EventStateBadges.success
-  }
-  return EventStateBadges.failure
-}
 
 function getFormattedTime(eventGroup: EventGroup) {
   if (eventGroup.failure) {

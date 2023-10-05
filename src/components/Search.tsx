@@ -181,7 +181,7 @@ export function Search() {
   return (
     <motion.div
       animate={{
-        width: showResults ? "60%" : "auto",
+        width: showResults ? "100%" : "60%",
       }}
     >
       <Flex flexDirection="col" justifyContent="around">

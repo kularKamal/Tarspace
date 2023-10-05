@@ -1,8 +1,8 @@
-import { Card, Flex, Grid, List, ListItem, Metric, Text, Title } from "@tremor/react"
+import { Card, Flex, Grid, List, ListItem, Text, Title } from "@tremor/react"
 import { useContext, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
-import { Breadcrumbs } from "components"
+import { PageHeading } from "components"
 import { AppContext, AuthContext } from "contexts"
 
 function Page() {
@@ -58,10 +58,7 @@ function Page() {
 
   return (
     <>
-      <Flex flexDirection="col" alignItems="start" className="space-y-4 mb-6">
-        <Breadcrumbs />
-        <Metric className="text-left">Customer</Metric>
-      </Flex>
+      <PageHeading title="Customer" />
 
       <Grid numItemsMd={3} className="gap-6">
         {Object.entries(projects).map(([project, total]) => (

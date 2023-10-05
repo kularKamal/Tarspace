@@ -1,6 +1,6 @@
 import { Text as CMText, Extension } from "@codemirror/state"
 import { CouchdbDoc, URL_SEPARATOR } from "@iotinga/ts-backpack-couchdb-client"
-import { IconCloudDownload } from "@tabler/icons-react"
+import { IconCloudDownload, IconCloudUpload, IconSettingsOff } from "@tabler/icons-react"
 import { Button, Card, Flex, Select, SelectItem, Text } from "@tremor/react"
 import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror"
 import axios from "axios"
@@ -177,6 +177,7 @@ export function ConfigurationEditor({ customer, project, deliverable, stages }: 
     }
 
     setIsSaving(true)
+
     const now = DateTime.now()
     const newConfig: ConfigurationDoc = {
       _id: `configuration:${project}@${customer}/${deliverable}/${selectedStage}/${now.toMillis()}`,
@@ -197,8 +198,8 @@ export function ConfigurationEditor({ customer, project, deliverable, stages }: 
 
   if (!configDoc || !configDoc.configuration || !selectedStage || !attachment) {
     return (
-      <Card className="mt-6 h-1/3">
-        <Text>Empty</Text>
+      <Card className="mt-6">
+        <EmptyView />
       </Card>
     )
   }
@@ -275,3 +276,15 @@ export function ConfigurationEditor({ customer, project, deliverable, stages }: 
     </Card>
   )
 }
+
+const EmptyView = () => (
+  <Flex className="min-h-[50vh]" justifyContent="around">
+    <Flex flexDirection="col" className="h-full w-1/5" justifyContent="center">
+      <IconSettingsOff size={48} stroke={1} className="text-tremor-content-subtle" />
+      <Text className="mt-6 text-tremor-content-subtle text-center">This deliverable has not been configured yet.</Text>
+      <Button className="mt-6" variant="secondary" icon={IconCloudUpload}>
+        Upload configuration
+      </Button>
+    </Flex>
+  </Flex>
+)

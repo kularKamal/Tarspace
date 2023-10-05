@@ -9,7 +9,6 @@ import {
   DateRangePicker,
   DateRangePickerValue,
   Flex,
-  Metric,
   MultiSelect,
   MultiSelectItem,
   Tab,
@@ -26,9 +25,8 @@ import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
 import { ConfigurationEditor } from "app/deliverable/configuration"
-import { EventState, EventStateBadges, EventStateMessages } from "app/deliverable/events"
 import { VersionEvents } from "app/deliverable/versions"
-import { Breadcrumbs } from "components"
+import { EventState, EventStateBadges, EventStateMessages, PageHeading } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
 import { isInProgress, isStageName, isTimedOut, titlecase } from "utils"
@@ -146,10 +144,7 @@ function Page() {
 
   return (
     <>
-      <Flex flexDirection="col" alignItems="start" className="space-y-4 mb-6">
-        <Breadcrumbs ignoreLast={tab !== undefined} />
-        <Metric className="text-left">Deliverable</Metric>
-      </Flex>
+      <PageHeading title="Deliverable" ignoreLast={tab !== undefined} />
 
       <TabGroup
         defaultIndex={Math.max(

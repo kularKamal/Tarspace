@@ -4,6 +4,11 @@ export enum JobState {
   CANCELLED,
 }
 
+export type JobRequest = {
+  args: string
+  kwargs?: Record<string, unknown>
+}
+
 export type CliResponse = {
   message?: string
 }

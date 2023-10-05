@@ -1,3 +1,4 @@
+import { Flex, Metric } from "@tremor/react"
 import { Link, useLocation } from "react-router-dom"
 
 export type BreadcrumbsElement = {
@@ -88,5 +89,20 @@ export function Breadcrumbs(props: BreadcrumbsProps) {
         )}
       </ol>
     </nav>
+  )
+}
+
+export type PageHeadingProps = BreadcrumbsProps & {
+  title: string
+}
+
+export function PageHeading(props: PageHeadingProps) {
+  const { title, ...breadcrumProps } = props
+
+  return (
+    <Flex flexDirection="col" alignItems="start" className="space-y-4 mb-8">
+      <Breadcrumbs {...breadcrumProps} />
+      <Metric className="text-left">{title}</Metric>
+    </Flex>
   )
 }

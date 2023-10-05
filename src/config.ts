@@ -5,6 +5,9 @@ export type Config = {
     eventTimeout: Duration
     forceLocale?: string
   }
+  backend: {
+    v1: string
+  }
   couchdb: {
     protocol: "http" | "https"
     host: string
@@ -17,6 +20,9 @@ export const DEFAULT_CONFIG: Config = {
     eventTimeout: Duration.fromObject({ days: 1 }),
     forceLocale: "it-IT",
   },
+  backend: {
+    v1: "localhost:5000/api/v1",
+  },
   couchdb: {
     protocol: "http",
     host: "localhost",
@@ -28,6 +34,9 @@ export const PRODUCTION_CONFIG: Config = {
   app: {
     eventTimeout: Duration.fromObject({ days: 1 }),
     forceLocale: "it-IT",
+  },
+  backend: {
+    v1: "iss.tinga.io/api/v1",
   },
   couchdb: {
     protocol: "https",
