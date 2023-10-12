@@ -1,23 +1,32 @@
 import { Dialog, Transition } from "@headlessui/react"
 import { Button, Flex } from "@tremor/react"
-import { Fragment, ReactElement, useState } from "react"
+import { Fragment, ReactElement } from "react"
+import { createPortal } from "react-dom"
 
-import { ScreenOverlay } from "components/ScreenOverlay"
+import { ScreenOverlay } from "components"
+import { ModalToggler } from "hooks"
 
 export type ModalProps = {
-  children: ReactElement
+  isShowing: boolean
+  hide: ModalToggler
+  children: ReactElement | ReactElement[]
 }
 
-export function Modal({ children }: ModalProps) {
-  const [showModal, setShowModal] = useState(false)
-
-  const closeModal = () => setShowModal(false)
-
-  return (
+export function Modal({ isShowing = false, hide, children }: ModalProps) {
+  return createPortal(
     <>
-      <Button onClick={() => setShowModal(true)}>Open regular modal</Button>
-      <Transition appear show={showModal} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={closeModal}>
+      <Transition
+        appear
+        show={isShowing || false}
+        as={Fragment}
+        enter="transition-opacity duration-75"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition-opacity duration-150"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <Dialog as="div" className="relative z-50" onClose={hide}>
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -44,7 +53,7 @@ export function Modal({ children }: ModalProps) {
                   {children}
 
                   <Flex justifyContent="end" className="border-t pt-4 mt-8">
-                    <Button variant="secondary" onClick={closeModal}>
+                    <Button variant="secondary" onClick={_ => hide()}>
                       Close
                     </Button>
                   </Flex>
@@ -54,6 +63,7 @@ export function Modal({ children }: ModalProps) {
           </div>
         </Dialog>
       </Transition>
-    </>
+    </>,
+    document.body
   )
 }

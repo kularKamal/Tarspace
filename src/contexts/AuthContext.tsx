@@ -1,10 +1,9 @@
-import { Logger } from "@iotinga/ts-backpack-common"
+import { Logger, deepEquals } from "@iotinga/ts-backpack-common"
 import { CouchdbDesignDocument, CouchdbManager, CouchdbSessionInfo } from "@iotinga/ts-backpack-couchdb-client"
 import React, { createContext, useContext, useState } from "react"
 
 import { AppContext } from "contexts/AppContext"
 import DESIGN_DOC from "design-doc.json"
-import equal from "fast-deep-equal"
 
 const logger = new Logger("AuthContext")
 
@@ -77,7 +76,7 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
       .db(usernameToDbName(username))
       .get<CouchdbDesignDocument>(designDocIdFor(username))
       .then(
-        resp => equal(resp.views, newDesignDoc.views),
+        resp => deepEquals(resp.views, newDesignDoc.views),
         _err => true
       )
 

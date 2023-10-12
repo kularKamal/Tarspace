@@ -1,18 +1,32 @@
 import { Text as CMText, Extension } from "@codemirror/state"
 import { CouchdbDoc, URL_SEPARATOR } from "@iotinga/ts-backpack-couchdb-client"
-import { IconCloudDownload, IconCloudUpload, IconSettingsOff } from "@tabler/icons-react"
-import { Button, Card, Flex, Select, SelectItem, Text } from "@tremor/react"
+import {
+  IconAlertTriangle,
+  IconCloudDownload,
+  IconCloudUpload,
+  IconDeviceFloppy,
+  IconSettingsOff,
+} from "@tabler/icons-react"
+import { Button, Card, Flex, Icon, Select, SelectItem, Text, TextInput, Title } from "@tremor/react"
 import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror"
 import axios from "axios"
 import { EditorView } from "codemirror"
-import { DateTime } from "luxon"
-import { MouseEvent, useCallback, useContext, useEffect, useRef, useState } from "react"
+import { Dispatch, MouseEvent, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { useEventListener } from "usehooks-ts"
 
+import { FileUploadButton, Modal } from "components"
 import { Configuration } from "config"
 import { AppContext, AuthContext } from "contexts"
+import { ModalToggler, useDebouncedState, useModal } from "hooks"
 import { ConfigurationDoc } from "types"
-import { getCodeMirrorMode, titlecase } from "utils"
+import {
+  CONFIGURATION_FILENAME,
+  FileValidationStatus,
+  SUPPORTED_MIMETYPES,
+  getCodeMirrorMode,
+  titlecase,
+  validateFile,
+} from "utils"
 
 const EXT: Extension[] = [
   EditorView.theme(
@@ -54,8 +68,8 @@ export type ConfigurationEditorProps = {
   deliverable: string
   stages: string[]
 }
-export function ConfigurationEditor({ customer, project, deliverable, stages }: ConfigurationEditorProps) {
-  const { CouchdbManager } = useContext(AppContext)
+export default function ConfigurationEditor({ customer, project, deliverable, stages }: ConfigurationEditorProps) {
+  const { CouchdbManager, CliAPIClient } = useContext(AppContext)
   const { username, userDb } = useContext(AuthContext)
   const designDoc = username as string
 
@@ -71,7 +85,7 @@ export function ConfigurationEditor({ customer, project, deliverable, stages }: 
   const configString = baseText.toString()
 
   const attachment = configDoc && configDoc._attachments ? Object.entries(configDoc._attachments)[0] : null
-  const isZipConfig = attachment ? attachment[0].endsWith(".zip") : false
+  const isZipConfig = attachment ? attachment[1].content_type === "application/zip" : false
 
   useEventListener("beforeunload", e => {
     if (!currentText || !baseText) {
@@ -171,71 +185,100 @@ export function ConfigurationEditor({ customer, project, deliverable, stages }: 
       .catch(_ => {})
   }, [configDoc, configString, downloadAttachment, userDb])
 
-  async function handleSave(event: MouseEvent<HTMLButtonElement>) {
-    if (!userDb || !configDoc || !selectedStage) {
-      return
-    }
+  const handleSave = useCallback(
+    async (event: MouseEvent<HTMLButtonElement>) => {
+      if (!userDb || !configDoc || !selectedStage || !attachment) {
+        return
+      }
 
-    setIsSaving(true)
+      setIsSaving(true)
 
-    const now = DateTime.now()
-    const newConfig: ConfigurationDoc = {
-      _id: `configuration:${project}@${customer}/${deliverable}/${selectedStage}/${now.toMillis()}`,
-      type: "configuration",
-      configuration: JSON.parse(currentText.toString()),
-      project: [project, customer].join("@"),
-      deliverable: deliverable,
-      stage: selectedStage,
-      timestamp: now.toISO() as string,
-    }
-    await CouchdbManager.db(userDb)
-      .createOrUpdateDoc(newConfig)
-      .then(_ => {
+      const blob = new Blob([currentText.toString()])
+      CliAPIClient.uploadConfiguration(
+        [project, customer].join("@"),
+        deliverable,
+        selectedStage,
+        configDoc.configuration || "",
+        attachment[0],
+        blob
+      ).then(resp => {
         setIsSaving(false)
-        setConfigDoc(newConfig)
       })
-  }
+    },
+    [CliAPIClient, attachment, configDoc, currentText, customer, deliverable, project, selectedStage, userDb]
+  )
+
+  const { isShowing, toggle: toggleModal } = useModal()
+  const [validationStatus, setValidationStatus] = useState<FileValidationStatus | null>(null)
+
+  const handleUpload = useCallback(
+    async (file: File) => {
+      if (!selectedStage) {
+        return
+      }
+
+      const validation = await validateFile(file)
+      if (!validation.valid) {
+        setValidationStatus(validation)
+        toggleModal(true)
+        return
+      }
+
+      setIsSaving(true)
+
+      CliAPIClient.uploadConfiguration(
+        [project, customer].join("@"),
+        deliverable,
+        selectedStage,
+        file.type === SUPPORTED_MIMETYPES.zip ? CONFIGURATION_FILENAME : file.name,
+        file.name,
+        file
+      ).then(resp => {
+        setIsSaving(false)
+      })
+    },
+    [CliAPIClient, customer, deliverable, project, selectedStage, toggleModal]
+  )
 
   if (!configDoc || !configDoc.configuration || !selectedStage || !attachment) {
     return (
       <Card className="mt-6">
-        <EmptyView />
+        <UploadErrorModal isShowing={isShowing} toggleModal={toggleModal} validationStatus={validationStatus} />
+        <EmptyView handleFile={handleUpload} setSelectedStage={setSelectedStage} />
       </Card>
     )
   }
 
   return (
     <Card className="mt-6 p-0 min-h-[20vh]">
+      <UploadErrorModal isShowing={isShowing} toggleModal={toggleModal} validationStatus={validationStatus} />
       <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background dark:bg-dark-tremor-background border-b-tremor-border dark:border-b-dark-tremor-background-subtle border-b rounded-t-tremor-default">
-        <Select className="ml-6 w-auto" value={selectedStage} onValueChange={value => setSelectedStage(value)}>
+        <Select
+          className="ml-6 w-auto"
+          value={selectedStage}
+          onValueChange={value => setSelectedStage(value)}
+          enableClear={false}
+        >
           {stages.map(stage => (
             <SelectItem key={stage} value={stage}>
               {titlecase(stage)}
             </SelectItem>
           ))}
         </Select>
-        {/* <Button
-          icon={IconDeviceFloppy}
-          onClick={handleSave}
-          variant="secondary"
-          size="xs"
-          disabled={currentText.eq(baseText)}
-          tooltip={currentText.eq(baseText) ? "No changes to save" : undefined}
-          loading={isSaving}
-        >
-          Save
-        </Button> */}
-      </Flex>
-      {isZipConfig ? (
-        <Flex className="p-8 space-x-6" alignItems="center">
-          <Text className="w-full">{attachment[0]}</Text>
-          {/* <Button variant="light" icon={IconCloudUpload} size="lg">
-            Upload
-          </Button> */}
+        <Flex justifyContent="end" alignItems="baseline" className="space-x-4">
+          <FileUploadButton
+            handleFile={handleUpload}
+            icon={IconCloudUpload}
+            variant="secondary"
+            size="xs"
+            type="submit"
+            tooltip="Upload a new configuration file"
+          />
           <Button
-            variant="light"
             icon={IconCloudDownload}
-            size="lg"
+            variant="secondary"
+            size="xs"
+            tooltip="Download the current configuration file"
             onClick={_ => {
               if (!configDoc._attachments) {
                 return
@@ -254,6 +297,21 @@ export function ConfigurationEditor({ customer, project, deliverable, stages }: 
           >
             Download
           </Button>
+          <Button
+            icon={IconDeviceFloppy}
+            onClick={handleSave}
+            size="xs"
+            disabled={currentText.eq(baseText)}
+            tooltip={currentText.eq(baseText) ? "No changes to save" : undefined}
+            loading={isSaving}
+          >
+            Save
+          </Button>
+        </Flex>
+      </Flex>
+      {isZipConfig ? (
+        <Flex className="p-8 space-x-6" alignItems="center">
+          <Text className="w-full">{attachment[0]}</Text>
         </Flex>
       ) : (
         <CodeMirror
@@ -268,7 +326,6 @@ export function ConfigurationEditor({ customer, project, deliverable, stages }: 
               setCurrentText(viewUpdate.state.doc)
             }
           }}
-          editable={false}
           autoFocus
           indentWithTab
         />
@@ -277,14 +334,61 @@ export function ConfigurationEditor({ customer, project, deliverable, stages }: 
   )
 }
 
-const EmptyView = () => (
-  <Flex className="min-h-[50vh]" justifyContent="around">
-    <Flex flexDirection="col" className="h-full w-1/5" justifyContent="center">
-      <IconSettingsOff size={48} stroke={1} className="text-tremor-content-subtle" />
-      <Text className="mt-6 text-tremor-content-subtle text-center">This deliverable has not been configured yet.</Text>
-      <Button className="mt-6" variant="secondary" icon={IconCloudUpload}>
-        Upload configuration
-      </Button>
+type EmptyViewProps = {
+  handleFile: (file: File) => void
+  setSelectedStage: Dispatch<SetStateAction<string | null>>
+}
+function EmptyView({ handleFile, setSelectedStage }: EmptyViewProps) {
+  const [stageName, setStageName] = useDebouncedState("", 100)
+
+  return (
+    <Flex className="min-h-[50vh]" justifyContent="around">
+      <Flex flexDirection="col" className="h-full w-1/3 space-y-8" justifyContent="center">
+        <Flex className="space-x-4" justifyContent="center">
+          <Icon icon={IconSettingsOff} size="xl" className="text-tremor-content-subtle" />
+
+          <div>
+            <Title>No configuration found</Title>
+            <Text className="text-tremor-content-subtle">This deliverable has not been configured yet.</Text>
+          </div>
+        </Flex>
+        <Flex className="space-x-4 w-full" justifyContent="center">
+          <TextInput placeholder="Name a stage..." onChange={e => setStageName(e.target.value)} />
+          {/* <Button variant="secondary" icon={IconCloudUpload} disabled={stageName === ""}>
+            Upload configuration
+          </Button> */}
+          <FileUploadButton
+            handleFile={f => {
+              setSelectedStage(stageName)
+              handleFile(f)
+            }}
+            icon={IconCloudUpload}
+            text="Upload configuration"
+            variant="secondary"
+            disabled={stageName === ""}
+          />
+        </Flex>
+      </Flex>
     </Flex>
-  </Flex>
+  )
+}
+
+type UploadErroModalProps = {
+  isShowing: boolean
+  toggleModal: ModalToggler
+  validationStatus: FileValidationStatus | null
+}
+const UploadErrorModal = ({ isShowing, toggleModal, validationStatus }: UploadErroModalProps) => (
+  <Modal isShowing={isShowing} hide={toggleModal}>
+    <Flex className="space-x-6" justifyContent="start" alignItems="start">
+      <Icon size="lg" color="amber" variant="light" icon={IconAlertTriangle} />
+      <Flex flexDirection="col" className="space-y-2 w-full mt-2" justifyContent="start" alignItems="start">
+        <Title className="mb-2">Could not upload file</Title>
+        <Text>
+          {validationStatus?.message} (<span className="font-mono">{validationStatus?.context}</span>).{" "}
+          {validationStatus?.help}
+        </Text>
+      </Flex>
+    </Flex>
+  </Modal>
 )

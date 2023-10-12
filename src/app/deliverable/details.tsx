@@ -1,14 +1,8 @@
+import { IconAlertTriangle, IconBrandGithub, IconCloudDownload, IconRocket, IconSettingsOff } from "@tabler/icons-react"
 import {
-  IconBrandGithub,
-  IconCircleCheckFilled,
-  IconCircleXFilled,
-  IconCloudDownload,
-  IconHelpCircleFilled,
-} from "@tabler/icons-react"
-import {
+  Badge,
   Button,
   Card,
-  Color,
   Divider,
   Flex,
   Grid,
@@ -16,44 +10,20 @@ import {
   List,
   ListItem,
   Metric,
+  Select,
+  SelectItem,
   Text,
   Title,
-  Tracker,
 } from "@tremor/react"
 import { DateTime } from "luxon"
-import { useContext, useEffect, useMemo, useState } from "react"
+import { memo, useContext, useEffect, useMemo, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import urlJoin from "url-join"
 
-import { Skeleton } from "components"
+import { BuildsTracker, Skeleton } from "components"
 import { AppContext, AuthContext } from "contexts"
-import { DeliverableDoc, EventGroup, StageInfoMap } from "types"
-import { formatTimestamp, sortEventGroupsByTime, titlecase } from "utils"
-
-const MAX_TRACKED_EVENTS = 36
-
-interface TrackerDatum {
-  color: Color
-  tooltip?: string
-}
-
-const TrackerData: Record<string, TrackerDatum> = {
-  SUCCESS: {
-    color: "emerald",
-    tooltip: "Successful",
-  },
-  FAILURE: {
-    color: "rose",
-    tooltip: "Failed",
-  },
-  TIMED_OUT: {
-    color: "gray",
-    tooltip: "Timed out",
-  },
-  EMPTY: {
-    color: "neutral",
-  },
-}
+import { DeliverableDoc, EventGroup, StageInfo, StageInfoMap, StageName } from "types"
+import { formatTimestamp, semverCompare, titlecase } from "utils"
 
 export type DetailsViewProps = {
   stages: StageInfoMap
@@ -96,34 +66,6 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
       })
   }, [CouchdbManager, customer, userDb, deliverable, designDoc, project, stages])
 
-  const sortedEvents = useMemo(
-    () =>
-      trackerEvents.sort(sortEventGroupsByTime).slice(0, Math.min(trackerEvents.length, MAX_TRACKED_EVENTS)).reverse(),
-    [trackerEvents]
-  )
-
-  const trackerData: TrackerDatum[] = useMemo(
-    () =>
-      new Array(MAX_TRACKED_EVENTS - sortedEvents.length).fill(TrackerData.EMPTY).concat(
-        sortedEvents.map(eg => {
-          const tooltip = eg.start?.timestamp && formatTimestamp(eg.start.timestamp, DateTime.DATETIME_MED)
-          if (eg.failure) {
-            return { ...TrackerData.FAILURE, tooltip }
-          }
-
-          if (eg.success) {
-            return { ...TrackerData.SUCCESS, tooltip }
-          }
-
-          return { ...TrackerData.TIMED_OUT, tooltip }
-        })
-      ),
-    [sortedEvents]
-  )
-
-  const firstTs = sortedEvents.at(0)?.start?.timestamp
-  const lastTs = sortedEvents.at(sortedEvents.length - 1)?.start?.timestamp
-
   const stagesEntries = useMemo(() => Object.entries(stages), [stages])
 
   return (
@@ -137,10 +79,10 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
         ) : (
           stagesEntries.map(([stageName, info]) => (
             <Card key={stageName}>
-              <Flex flexDirection="row" justifyContent="between">
+              <Flex flexDirection="row" justifyContent="between" alignItems="baseline">
                 <Metric>{titlecase(stageName)}</Metric>
                 <Link to={uploads[info.latestVersion]}>
-                  <Button icon={IconCloudDownload} variant="light" size="lg" tooltip={`Download deliverable`} />
+                  <Button icon={IconCloudDownload} variant="light" size="lg" tooltip="Download deliverable files" />
                 </Link>
               </Flex>
               <List className="mt-4">
@@ -168,25 +110,10 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
       <Divider className="lg:hidden" />
       <Grid numItemsMd={2} className="gap-6 lg:mt-6">
         <Card>
-          <Flex>
-            <Title className="w-full">Builds overview</Title>
-            <Flex justifyContent="end" className="-space-x-2 -mr-2">
-              <Icon icon={IconCircleCheckFilled} {...TrackerData.SUCCESS} />
-              <Icon icon={IconHelpCircleFilled} {...TrackerData.TIMED_OUT} />
-              <Icon icon={IconCircleXFilled} {...TrackerData.FAILURE} />
-            </Flex>
-          </Flex>
-          {trackerEvents.length > 0 ? (
-            <>
-              <Tracker data={trackerData} className="mt-2" />
-              <Flex className="mt-2">
-                <Text>{formatTimestamp(firstTs, DateTime.DATE_MED)}</Text>
-                <Text>{formatTimestamp(lastTs, DateTime.DATE_MED)}</Text>
-              </Flex>
-            </>
-          ) : (
-            <EmptyTracker />
-          )}
+          <BuildsTracker trackerEvents={trackerEvents} />
+        </Card>
+        <Card>
+          <PublishCard trackerEvents={trackerEvents} stages={stages} />
         </Card>
       </Grid>
     </>
@@ -195,17 +122,93 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
 
 export default DetailsView
 
-function EmptyTracker() {
+type PublishCardProps = {
+  trackerEvents: EventGroup[]
+  stages: StageInfoMap
+}
+const PublishCard = memo<PublishCardProps>(({ trackerEvents, stages }) => {
+  const versionStage: Record<string, StageName> = Object.fromEntries(
+    (Object.entries(stages) as [StageName, StageInfo][]).map(pair => [pair[1].latestVersion, pair[0]])
+  )
+
+  const [selectedVersion, setSelectedVersion] = useState<string>("")
+  const [selectedStage, setSelectedStage] = useState<StageName | "">("")
+
+  const showOldVersionWarning =
+    selectedStage &&
+    selectedVersion &&
+    semverCompare(selectedVersion, stages[selectedStage]?.latestVersion || "0.0.0") <= 0
+
+  const versionWarning = "You're trying to publish a version that's older or equal to the one already on the stage"
+
+  if (Object.keys(stages).length === 0) {
+    return (
+      <Flex flexDirection="col" className="h-full space-y-8" justifyContent="center">
+        <Flex className="space-x-4" justifyContent="center">
+          <Icon icon={IconSettingsOff} size="xl" className="text-tremor-content-subtle" />
+
+          <div>
+            <Title>No configuration found</Title>
+            <Text className="text-tremor-content-subtle">This deliverable has not been configured yet.</Text>
+          </div>
+        </Flex>
+      </Flex>
+    )
+  }
+
   return (
     <>
-      <Tracker data={new Array(MAX_TRACKED_EVENTS).fill(TrackerData.EMPTY)} className="mt-2" />
-      <Flex className="mt-2">
-        <Skeleton className="h-tremor-default w-20" />
-        <Skeleton className="h-tremor-default w-20" />
+      <Flex justifyContent="between">
+        <Title className="w-full">Publish deliverable</Title>
+        <Flex justifyContent="end" className="space-x-2">
+          {showOldVersionWarning && (
+            <Icon size="md" icon={IconAlertTriangle} color="amber" variant="light" tooltip={versionWarning} />
+          )}
+          <Link to="">
+            <Button
+              icon={IconRocket}
+              variant="secondary"
+              size="sm"
+              disabled={selectedVersion === "" || selectedStage === ""}
+            >
+              Publish
+            </Button>
+          </Link>
+        </Flex>
+      </Flex>
+      <Flex className="mt-6 space-x-4">
+        <Text>Publish</Text>
+        <Select
+          className="w-full"
+          placeholder="Select version..."
+          value={selectedVersion}
+          onValueChange={setSelectedVersion}
+        >
+          {trackerEvents.map(eg => (
+            <SelectItem key={eg.version} value={eg.version} className="[&>span]:w-full">
+              <Flex justifyContent="between">
+                <Text>{eg.version}</Text>
+                {versionStage[eg.version] && <Badge>{titlecase(versionStage[eg.version])}</Badge>}
+              </Flex>
+            </SelectItem>
+          ))}
+        </Select>
+        <Text>on</Text>
+        <Select
+          value={selectedStage}
+          onValueChange={value => setSelectedStage(value as StageName | "")}
+          placeholder="Select stage..."
+        >
+          {Object.keys(stages).map(stage => (
+            <SelectItem key={stage} value={stage}>
+              {titlecase(stage)}
+            </SelectItem>
+          ))}
+        </Select>
       </Flex>
     </>
   )
-}
+})
 
 function EmptyStageCard() {
   return (

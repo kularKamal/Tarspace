@@ -4,6 +4,7 @@ export type Config = {
   app: {
     eventTimeout: Duration
     forceLocale?: string
+    maxUploadFileSize: number
   }
   backend: {
     v1: string
@@ -19,9 +20,10 @@ export const DEFAULT_CONFIG: Config = {
   app: {
     eventTimeout: Duration.fromObject({ days: 1 }),
     forceLocale: "it-IT",
+    maxUploadFileSize: 100 * 1024 * 1024, // 100MB
   },
   backend: {
-    v1: "localhost:5000/api/v1",
+    v1: "http://localhost:5000/api/v1",
   },
   couchdb: {
     protocol: "http",
@@ -34,9 +36,10 @@ export const PRODUCTION_CONFIG: Config = {
   app: {
     eventTimeout: Duration.fromObject({ days: 1 }),
     forceLocale: "it-IT",
+    maxUploadFileSize: 100 * 1024 * 1024, // 100MB
   },
   backend: {
-    v1: "iss.tinga.io/api/v1",
+    v1: "https://iss.tinga.io/api/v1",
   },
   couchdb: {
     protocol: "https",

@@ -1,6 +1,6 @@
 import { Logger } from "@iotinga/ts-backpack-common"
 import { Card, Flex, Grid, List, ListItem, Text, Title } from "@tremor/react"
-import { useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { AppContext, AuthContext } from "contexts"
@@ -48,7 +48,7 @@ function App() {
       })
   }, [userDb, CouchdbManager, designDoc, project, customer])
 
-  const numProjects = (customer: string) => projects.filter(key => key[0] === customer).length
+  const numProjects = useCallback((customer: string) => projects.filter(key => key[0] === customer).length, [projects])
 
   return (
     <Grid numItemsMd={3} className="gap-6">

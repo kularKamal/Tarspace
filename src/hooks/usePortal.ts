@@ -25,7 +25,7 @@ function addRootElement<E extends HTMLElement = HTMLElement>(rootElem: E) {
  * makes this trivial), so there is no need to ensure the parent target already
  * exists.
  * @example
- * const target = usePortal(id, [id]);
+ * const target = usePortal(id);
  * return createPortal(children, target);
  * @param {String} id The id of the target container, e.g 'modal' or 'spotlight'
  * @returns {HTMLElement} The DOM node to use as the Portal target.

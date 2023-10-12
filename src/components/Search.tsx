@@ -1,14 +1,14 @@
 import { IconSearch, IconSearchOff, IconZoomExclamation } from "@tabler/icons-react"
-import { Card, Col, Divider, Flex, Grid, Text, TextInput, Title } from "@tremor/react"
+import { Card, Col, Divider, Flex, Grid, Icon, Text, TextInput, Title } from "@tremor/react"
 import { motion } from "framer-motion"
 import { ChangeEvent, KeyboardEvent, MouseEvent, useContext, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { useDebounce, useOnClickOutside } from "usehooks-ts"
+import { useOnClickOutside } from "usehooks-ts"
 
 import { Spinner } from "components"
 import { ScreenOverlay } from "components/ScreenOverlay"
 import { AppContext, AuthContext } from "contexts"
-import { useIndexableData, useLunr, useQueryWildcards } from "hooks"
+import { useDebouncedState, useIndexableData, useLunr, useQueryWildcards } from "hooks"
 import { DeliverableDoc } from "types"
 
 const SEARCH_FIELDS = ["name", "project", "artifacts", "repository"]
@@ -89,16 +89,22 @@ function SearchResults({ queryIsEmpty, results, loading, onClick }: SearchResult
 }
 
 const SearchEmptyView = () => (
-  <Flex className="h-20" justifyContent="center">
-    <IconZoomExclamation size={32} stroke={1} className="text-tremor-content-subtle" />
-    <Text className="ml-3 mb-1 text-tremor-content-subtle text-center">Start typing to search</Text>
+  <Flex className="h-20 space-x-1" justifyContent="center">
+    <Icon icon={IconZoomExclamation} size="xl" className="text-tremor-content-subtle" />
+    <div>
+      <Title>Nothing to find</Title>
+      <Text className="mb-1 text-tremor-content-subtle text-center">Start typing to search</Text>
+    </div>
   </Flex>
 )
 
 const SearchNoResultsView = () => (
-  <Flex className="h-20" justifyContent="center">
-    <IconSearchOff size={32} stroke={1} className="text-tremor-content-subtle" />
-    <Text className="ml-3 mb-1 text-tremor-content-subtle text-center">No results found</Text>
+  <Flex className="h-20 space-x-1" justifyContent="center">
+    <Icon icon={IconSearchOff} size="xl" className="text-tremor-content-subtle" />
+    <div>
+      <Title>No results</Title>
+      <Text className="mb-1 text-tremor-content-subtle text-center">Check your search terms</Text>
+    </div>
   </Flex>
 )
 
@@ -108,9 +114,8 @@ export function Search() {
 
   const cache = useRef<Record<string, SearcheableDeliverable> | null>(null)
   const [deliverables, setDeliverables] = useState<Record<string, SearcheableDeliverable>>({})
-  const [query, setQuery] = useState<string>("")
-  const debouncedQuery = useDebounce(query, 100)
-  const queryFn = useQueryWildcards(debouncedQuery)
+  const [query, setQuery] = useDebouncedState<string>("", 100)
+  const queryFn = useQueryWildcards(query)
 
   const [showResults, setShowResults] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -202,7 +207,6 @@ export function Search() {
               onClick={handleClick}
               onChange={handleQueryChange}
               onKeyUp={handleKeyPress}
-              required
             />
             {showResults ? (
               <SearchResults

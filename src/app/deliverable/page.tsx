@@ -18,17 +18,17 @@ import {
   Text,
 } from "@tremor/react"
 import { DateTime } from "luxon"
-import { ElementType, PropsWithChildren, lazy, useContext, useEffect, useMemo, useState } from "react"
-import { TabPanel as HeadlessTab, useTabs } from "react-headless-tabs"
+import { ElementType, PropsWithChildren, Suspense, lazy, useContext, useEffect, useMemo, useState } from "react"
+import { useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
-import { ConfigurationEditor } from "app/deliverable/configuration"
-import { VersionEvents } from "app/deliverable/versions"
-import { EventState, EventStateBadges, EventStateMessages, PageHeading } from "components"
+import { type VersionEvents } from "app/deliverable/versions"
+import { EventState, EventStateBadges, EventStateMessages, Loading, PageHeading } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
 import { isInProgress, isStageName, isTimedOut, titlecase } from "utils"
 
+const ConfigurationEditor = lazy(() => import("app/deliverable/configuration"))
 const DetailsView = lazy(() => import("app/deliverable/details"))
 const EventsView = lazy(() => import("app/deliverable/events"))
 const VersionsView = lazy(() => import("app/deliverable/versions"))
@@ -50,10 +50,16 @@ const TAB_ICONS: Record<keyof typeof Tabs, ElementType> = {
 type StatusFilter = Partial<Record<EventState, boolean>>
 
 function CustomTabPanel<T extends string>(props: { name: string; currentTab?: T | null } & PropsWithChildren) {
+  const Loader = (
+    <Flex className="mt-[30vh]">
+      <Loading />
+    </Flex>
+  )
+
   return (
-    <TabPanel>
-      <HeadlessTab hidden={props.name !== props.currentTab}>{props.children}</HeadlessTab>
-    </TabPanel>
+    <Suspense fallback={Loader}>
+      <TabPanel>{props.name === props.currentTab ? props.children : null}</TabPanel>
+    </Suspense>
   )
 }
 
@@ -69,13 +75,15 @@ function Page() {
   const [events, setEvents] = useState<VersionEvents>({})
   const [eventsList, setEventsList] = useState<EventGroup[]>([])
 
-  const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), tab ?? Tabs.DETAILS)
+  const [selectedTab, setSelectedTab] = useTabs(Object.values(Tabs), (tab as Tabs) ?? Tabs.DETAILS)
 
   const [notFound, setNotFound] = useState(false)
 
   if (notFound) {
     navigate("/not-found")
   }
+
+  useEffect(() => setSelectedTab((tab as Tabs) ?? Tabs.DETAILS), [tab, setSelectedTab])
 
   useEffect(() => {
     if (!userDb) {
@@ -147,11 +155,11 @@ function Page() {
 
   return (
     <>
-      <PageHeading title="Deliverable" ignoreLast={tab !== undefined} />
+      <PageHeading title="Deliverable" ignoreLast={selectedTab !== undefined} />
 
       <TabGroup
         defaultIndex={Math.max(
-          Object.values(Tabs).findIndex(t => t === tab),
+          Object.values(Tabs).findIndex(t => t === selectedTab),
           0
         )}
       >
@@ -244,7 +252,12 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
     <Card className="mt-6 p-0">
       <div className="sticky px-6 pt-6 inset-0 z-10 bg-tremor-background dark:bg-dark-tremor-background border-b-tremor-border dark:border-b-dark-tremor-background-subtle border-b rounded-t-tremor-default">
         <Flex className="space-x-4" justifyContent="start" alignItems="center">
-          <DateRangePicker placeholder="Filter start dates..." enableYearNavigation onValueChange={setStartRange} />
+          <DateRangePicker
+            placeholder="Filter start dates..."
+            selectPlaceholder="Range..."
+            enableYearNavigation
+            onValueChange={setStartRange}
+          />
           <MultiSelect
             placeholder="Select status..."
             defaultValue={Object.keys(statusFilter)}
@@ -270,7 +283,12 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
             </Flex>
           </AccordionHeader>
           <AccordionBody className="px-0">
-            <DateRangePicker placeholder="Filter end dates..." enableYearNavigation onValueChange={setEndRange} />
+            <DateRangePicker
+              placeholder="Filter end dates..."
+              selectPlaceholder="Range..."
+              enableYearNavigation
+              onValueChange={setEndRange}
+            />
           </AccordionBody>
         </Accordion>
       </div>

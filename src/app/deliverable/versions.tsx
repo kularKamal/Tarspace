@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 import urlJoin from "url-join"
 
 import { EventGroup } from "types"
+import { semverCompare } from "utils"
 
 const EventsView = lazy(() => import("app/deliverable/events"))
 
@@ -14,19 +15,7 @@ export type VersionViewProps = {
 
 export type VersionEvents = Record<string, EventGroup[]>
 function VersionsView({ events }: VersionViewProps) {
-  function sortEvents(a: [string, EventGroup[]], b: [string, EventGroup[]]) {
-    function semverCompare(a: string, b: string) {
-      if (a.startsWith(b + "-")) {
-        return -1
-      }
-      if (b.startsWith(a + "-")) {
-        return 1
-      }
-      return a.localeCompare(b, undefined, { numeric: true, sensitivity: "case", caseFirst: "upper" })
-    }
-
-    return semverCompare(a[0], b[0])
-  }
+  const sortEvents = (a: [string, EventGroup[]], b: [string, EventGroup[]]) => semverCompare(a[0], b[0])
 
   const sortedEvents = useMemo(() => Object.entries(events).sort(sortEvents).reverse(), [events])
 

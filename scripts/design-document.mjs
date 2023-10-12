@@ -135,7 +135,7 @@ const latestPublishedVersionMap = function (doc) {
 }
 
 const latestPublishedVersionReduce = function (keys, values, rereduce) {
-  // From https://gist.github.com/iwill/a83038623ba4fef6abb9efca87ae9ccb\nfunction
+  // From https://gist.github.com/iwill/a83038623ba4fef6abb9efca87ae9ccb
   function semverCompare(a, b) {
     if (a.startsWith(b + "-")) {
       return -1
