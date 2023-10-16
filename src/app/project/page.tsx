@@ -106,6 +106,7 @@ function Page() {
           reduce: false,
           include_docs: true,
           descending: true,
+          limit: 1,
           start_key: [customer, project, d, "\uffff"],
           end_key: [customer, project, d],
         })),
