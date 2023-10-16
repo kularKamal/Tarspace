@@ -109,7 +109,7 @@ const SearchNoResultsView = () => (
 )
 
 export function Search() {
-  const { CouchdbManager } = useContext(AppContext)
+  const { CouchdbClient } = useContext(AppContext)
   const { userDb, username } = useContext(AuthContext)
 
   const cache = useRef<Record<string, SearcheableDeliverable> | null>(null)
@@ -140,7 +140,7 @@ export function Search() {
       return
     }
 
-    await CouchdbManager.db(userDb)
+    await CouchdbClient.db(userDb)
       .design(username)
       .view("deliverables-search", {
         reduce: true,

@@ -32,13 +32,13 @@ export const AuthContext = createContext<AuthContextType>({
 })
 
 export function AuthContextProvider({ children }: AuthContextProviderProps) {
-  const { CouchdbParams, CouchdbManager: manager } = useContext(AppContext)
+  const { CouchdbClient } = useContext(AppContext)
 
   const [userDb, setUserDb] = useState<string | undefined>(undefined)
   const [username, setUsername] = useState<string | undefined>(undefined)
 
   async function getSessionInfo() {
-    return new CouchdbManager(CouchdbParams).sessionInfo().then(resp => {
+    return new CouchdbManager(CouchdbClient.connectionParams).sessionInfo().then(resp => {
       const username = resp.userCtx?.name
       if (username) {
         setUsername(username)
@@ -49,8 +49,7 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
   }
 
   async function signIn(username: string, password: string) {
-    return manager
-      .signIn(username, password)
+    return CouchdbClient.signIn(username, password)
       .then(resp => {
         setUserDb(usernameToDbName(resp.name))
         setUsername(username)
@@ -72,8 +71,7 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
     const newDesignDoc = DESIGN_DOC as CouchdbDesignDocument
     newDesignDoc._id = designDocIdFor(username)
 
-    const shouldUpdate = await manager
-      .db(usernameToDbName(username))
+    const shouldUpdate = await CouchdbClient.db(usernameToDbName(username))
       .get<CouchdbDesignDocument>(designDocIdFor(username))
       .then(
         resp => deepEquals(resp.views, newDesignDoc.views),
@@ -81,7 +79,7 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
       )
 
     if (shouldUpdate) {
-      await manager.db(usernameToDbName(username)).createOrUpdateDoc(newDesignDoc)
+      await CouchdbClient.db(usernameToDbName(username)).createOrUpdateDoc(newDesignDoc)
     }
   }
 
@@ -90,7 +88,7 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
   }
 
   async function signOut() {
-    return manager.signOut().then(
+    return CouchdbClient.signOut().then(
       _ => {
         return true
       },

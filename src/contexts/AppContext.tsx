@@ -1,30 +1,16 @@
-import { CouchdbAuthMethod, CouchdbConnectionParams, CouchdbManager } from "@iotinga/ts-backpack-couchdb-client"
 import React, { createContext } from "react"
 
-import { CliAPI } from "api/CliAPI"
-import { Configuration } from "config"
+import { CliAPI } from "clients/CliAPI"
+import { CouchdbClient } from "clients/Couchdb"
 
 type AppContextType = {
   CliAPIClient: CliAPI
-  CouchdbManager: CouchdbManager
-  CouchdbParams: CouchdbConnectionParams
-}
-
-const connectionParams: CouchdbConnectionParams = {
-  protocol: Configuration.couchdb.protocol,
-  host: Configuration.couchdb.host,
-  port: Configuration.couchdb.port,
-  authMethod: CouchdbAuthMethod.COOKIE_RFC2109,
-}
-
-function createManager(connectionParams: CouchdbConnectionParams) {
-  return new CouchdbManager(connectionParams)
+  CouchdbClient: CouchdbClient
 }
 
 const value: AppContextType = {
   CliAPIClient: new CliAPI(),
-  CouchdbManager: createManager(connectionParams),
-  CouchdbParams: connectionParams,
+  CouchdbClient: new CouchdbClient(),
 }
 
 export const AppContext = createContext<AppContextType>(value)

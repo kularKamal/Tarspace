@@ -1,7 +1,8 @@
-import { Badge, Flex, Grid, Table, TableBody, TableCell, TableRow, Text, Title } from "@tremor/react"
+import { Badge, Flex, Grid, Icon, Table, TableBody, TableCell, TableRow, Text, Title } from "@tremor/react"
 import { useContext, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
+import { IconRocketOff } from "@tabler/icons-react"
 import { ClickableCard, EventState, EventStateBadges, PageHeading } from "components"
 import { Skeleton } from "components/Skeleton"
 import { AppContext, AuthContext } from "contexts"
@@ -11,7 +12,7 @@ import { formatTimestamp, isStageName, titlecase } from "utils"
 type LastBuildState = Record<string, [EventState, string]>
 
 function Page() {
-  const { CouchdbManager } = useContext(AppContext)
+  const { CouchdbClient } = useContext(AppContext)
   const { username, userDb } = useContext(AuthContext)
 
   const designDoc = username as string
@@ -39,7 +40,7 @@ function Page() {
       return
     }
 
-    CouchdbManager.db(userDb)
+    CouchdbClient.db(userDb)
       .design(designDoc)
       .view("deliverables", {
         group_level: 3,
@@ -53,14 +54,14 @@ function Page() {
         }
         setDeliverables(resp.rows.map(row => (row.key as string[])[2]))
       })
-  }, [CouchdbManager, customer, designDoc, project, userDb])
+  }, [CouchdbClient, customer, designDoc, project, userDb])
 
   useEffect(() => {
     if (!userDb) {
       return
     }
 
-    CouchdbManager.db(userDb)
+    CouchdbClient.db(userDb)
       .design(designDoc)
       .viewQueries<(string | undefined)[], EventDoc>("latest-published-version", {
         queries: deliverables.map(d => ({
@@ -91,14 +92,14 @@ function Page() {
           })
         setLastPublishedVersions(map)
       })
-  }, [CouchdbManager, customer, deliverables, designDoc, project, userDb])
+  }, [CouchdbClient, customer, deliverables, designDoc, project, userDb])
 
   useEffect(() => {
     if (!userDb) {
       return
     }
 
-    CouchdbManager.db(userDb)
+    CouchdbClient.db(userDb)
       .design(designDoc)
       .viewQueries<(string | undefined)[], EventDoc>("events-build", {
         queries: deliverables.map(d => ({
@@ -122,7 +123,7 @@ function Page() {
 
         setLastBuildState(map)
       })
-  }, [CouchdbManager, customer, deliverables, designDoc, project, userDb])
+  }, [CouchdbClient, customer, deliverables, designDoc, project, userDb])
 
   return (
     <>
@@ -146,7 +147,7 @@ function Page() {
                 )}
               </Flex>
 
-              <Table className="mt-4">
+              <Table className="mt-4 h-full">
                 {lastPublishedVersions && Object.keys(lastPublishedVersions).length > 0 ? (
                   <TableBody>
                     {lastPublishedVersions[deliverable] &&
@@ -166,8 +167,8 @@ function Page() {
                   </TableBody>
                 ) : (
                   <TableBody>
-                    <EmptyStageRow />
-                    <EmptyStageRow />
+                    <LoadingStageRow />
+                    <LoadingStageRow />
                   </TableBody>
                 )}
               </Table>
@@ -181,18 +182,29 @@ function Page() {
 
 export default Page
 
-function EmptyStageRow() {
-  return (
-    <TableRow>
-      <TableCell>
-        <Skeleton className="h-tremor-default w-32" />
-      </TableCell>
-      <TableCell className="text-center">
-        <Skeleton className="h-tremor-default w-32" />
-      </TableCell>
-      <TableCell className="text-right">
-        <Skeleton className="h-tremor-default w-32" />
-      </TableCell>
-    </TableRow>
-  )
-}
+const LoadingStageRow = () => (
+  <TableRow>
+    <TableCell>
+      <Skeleton className="h-tremor-default w-32" />
+    </TableCell>
+    <TableCell className="text-center">
+      <Skeleton className="h-tremor-default w-32" />
+    </TableCell>
+    <TableCell className="text-right">
+      <Skeleton className="h-tremor-default w-32" />
+    </TableCell>
+  </TableRow>
+)
+
+const EmptyStageCard = () => (
+  <Flex flexDirection="col" className="h-full space-y-8" justifyContent="center">
+    <Flex className="space-x-4" justifyContent="center">
+      <Icon icon={IconRocketOff} size="xl" className="text-tremor-content-subtle" />
+
+      <div>
+        <Title>No deployment found</Title>
+        <Text className="text-tremor-content-subtle">This deliverable has never been deployed.</Text>
+      </div>
+    </Flex>
+  </Flex>
+)

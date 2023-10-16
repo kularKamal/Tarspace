@@ -5,6 +5,7 @@ import {
   IconCloudDownload,
   IconCloudUpload,
   IconDeviceFloppy,
+  IconFileZip,
   IconSettingsOff,
 } from "@tabler/icons-react"
 import { Button, Card, Flex, Icon, Select, SelectItem, Text, TextInput, Title } from "@tremor/react"
@@ -69,7 +70,7 @@ export type ConfigurationEditorProps = {
   stages: string[]
 }
 export default function ConfigurationEditor({ customer, project, deliverable, stages }: ConfigurationEditorProps) {
-  const { CouchdbManager, CliAPIClient } = useContext(AppContext)
+  const { CouchdbClient, CliAPIClient } = useContext(AppContext)
   const { username, userDb } = useContext(AuthContext)
   const designDoc = username as string
 
@@ -105,7 +106,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
       return
     }
 
-    CouchdbManager.db(userDb)
+    CouchdbClient.db(userDb)
       .design(designDoc)
       .view<(string | undefined)[], ConfigurationDoc>("configurations-latest", {
         reduce: true,
@@ -121,7 +122,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
           throw Error
         }
 
-        return CouchdbManager.db(userDb).get<ConfigurationDoc>(value._id, {
+        return CouchdbClient.db(userDb).get<ConfigurationDoc>(value._id, {
           // attachments: true,
           att_encoding_info: true,
         })
@@ -130,7 +131,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
         setConfigDoc(resp)
       })
       .catch(_ => {})
-  }, [CouchdbManager, customer, deliverable, designDoc, project, selectedStage, userDb])
+  }, [CouchdbClient, customer, deliverable, designDoc, project, selectedStage, userDb])
 
   const downloadAttachment = useCallback(
     (filename: string) => {
@@ -252,7 +253,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
   return (
     <Card className="mt-6 p-0 min-h-[20vh]">
       <UploadErrorModal isShowing={isShowing} toggleModal={toggleModal} validationStatus={validationStatus} />
-      <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background dark:bg-dark-tremor-background border-b-tremor-border dark:border-b-dark-tremor-background-subtle border-b rounded-t-tremor-default">
+      <Flex className="space-x-6 sticky py-6 pr-6 top-0 z-10 bg-tremor-background dark:bg-dark-tremor-background border-b border-b-tremor-border dark:border-b-dark-tremor-background-subtle rounded-t-tremor-default">
         <Select
           className="ml-6 w-auto"
           value={selectedStage}
@@ -310,8 +311,15 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
         </Flex>
       </Flex>
       {isZipConfig ? (
-        <Flex className="p-8 space-x-6" alignItems="center">
-          <Text className="w-full">{attachment[0]}</Text>
+        <Flex flexDirection="col" className="h-full space-y-8" justifyContent="center">
+          <Flex className="space-x-2 h-[15vh]" justifyContent="center">
+            <Icon icon={IconFileZip} size="xl" className="text-tremor-content-subtle" />
+
+            <div>
+              <Title>Configuration is archive</Title>
+              <Text className="text-tremor-content-subtle">This configuration is not editable directly.</Text>
+            </div>
+          </Flex>
         </Flex>
       ) : (
         <CodeMirror
@@ -354,9 +362,6 @@ function EmptyView({ handleFile, setSelectedStage }: EmptyViewProps) {
         </Flex>
         <Flex className="space-x-4 w-full" justifyContent="center">
           <TextInput placeholder="Name a stage..." onChange={e => setStageName(e.target.value)} />
-          {/* <Button variant="secondary" icon={IconCloudUpload} disabled={stageName === ""}>
-            Upload configuration
-          </Button> */}
           <FileUploadButton
             handleFile={f => {
               setSelectedStage(stageName)
@@ -373,14 +378,14 @@ function EmptyView({ handleFile, setSelectedStage }: EmptyViewProps) {
   )
 }
 
-type UploadErroModalProps = {
+type UploadErrorModalProps = {
   isShowing: boolean
   toggleModal: ModalToggler
   validationStatus: FileValidationStatus | null
 }
-const UploadErrorModal = ({ isShowing, toggleModal, validationStatus }: UploadErroModalProps) => (
+const UploadErrorModal = ({ isShowing, toggleModal, validationStatus }: UploadErrorModalProps) => (
   <Modal isShowing={isShowing} hide={toggleModal}>
-    <Flex className="space-x-6" justifyContent="start" alignItems="start">
+    <Flex className="space-x-5" justifyContent="start" alignItems="start">
       <Icon size="lg" color="amber" variant="light" icon={IconAlertTriangle} />
       <Flex flexDirection="col" className="space-y-2 w-full mt-2" justifyContent="start" alignItems="start">
         <Title className="mb-2">Could not upload file</Title>

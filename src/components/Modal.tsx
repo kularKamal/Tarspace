@@ -1,18 +1,35 @@
 import { Dialog, Transition } from "@headlessui/react"
-import { Button, Flex } from "@tremor/react"
+import { Button, ButtonProps, Card, Flex } from "@tremor/react"
 import { Fragment, ReactElement } from "react"
 import { createPortal } from "react-dom"
 
 import { ScreenOverlay } from "components"
 import { ModalToggler } from "hooks"
 
+export type ModalAction = {
+  text: string
+  props: ButtonProps
+}
+
 export type ModalProps = {
   isShowing: boolean
   hide: ModalToggler
   children: ReactElement | ReactElement[]
+  actions?: ReactElement | ReactElement[]
 }
 
-export function Modal({ isShowing = false, hide, children }: ModalProps) {
+export function Modal(props: ModalProps) {
+  const {
+    isShowing = false,
+    hide,
+    children,
+    actions = (
+      <Button variant="secondary" onClick={_ => hide()}>
+        Close
+      </Button>
+    ),
+  } = props
+
   return createPortal(
     <>
       <Transition
@@ -49,13 +66,14 @@ export function Modal({ isShowing = false, hide, children }: ModalProps) {
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-xl transform overflow-hidden ring-tremor bg-white p-6 text-left align-middle shadow-tremor transition-all rounded-xl">
+                <Dialog.Panel
+                  as={Card}
+                  className="w-full max-w-xl transform overflow-hidden p-6 text-left align-middle shadow-tremor transition-all rounded-xl"
+                >
                   {children}
 
-                  <Flex justifyContent="end" className="border-t pt-4 mt-8">
-                    <Button variant="secondary" onClick={_ => hide()}>
-                      Close
-                    </Button>
+                  <Flex justifyContent="end" className="border-t dark:border-dark-tremor-border pt-4 mt-8 space-x-4">
+                    {actions}
                   </Flex>
                 </Dialog.Panel>
               </Transition.Child>

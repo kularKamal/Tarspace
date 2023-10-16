@@ -31,7 +31,7 @@ export function Loading({ delay = 100, text = "Loading..." }: LoadingProps) {
       leave="transition-opacity duration-50"
       leaveFrom="opacity-100"
       leaveTo="opacity-0"
-      className="w-full h-full bg-tremor-background-muted/25 grid place-items-center opacity-1"
+      className="w-full h-full grid place-items-center opacity-1"
     >
       <Flex flexDirection="col" justifyContent="center" alignItems="center" className="space-y-4">
         <div className="max-w-[10vw]">

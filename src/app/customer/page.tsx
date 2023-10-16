@@ -7,7 +7,7 @@ import { ClickableCard } from "components/ClickableCard"
 import { AppContext, AuthContext } from "contexts"
 
 function Page() {
-  const { CouchdbManager } = useContext(AppContext)
+  const { CouchdbClient } = useContext(AppContext)
   const { username, userDb } = useContext(AuthContext)
 
   const designDoc = username as string
@@ -32,7 +32,7 @@ function Page() {
       return
     }
 
-    CouchdbManager.db(userDb)
+    CouchdbClient.db(userDb)
       .design(designDoc)
       .view("deliverables", {
         group_level: 3,
@@ -55,7 +55,7 @@ function Page() {
 
         setProjects(projects)
       })
-  }, [userDb, CouchdbManager, designDoc, customer])
+  }, [userDb, CouchdbClient, designDoc, customer])
 
   return (
     <>

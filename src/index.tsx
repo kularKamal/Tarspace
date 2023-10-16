@@ -1,14 +1,12 @@
+import { Settings } from "luxon"
 import React, { Suspense, lazy } from "react"
 import ReactDOM from "react-dom/client"
 import { Navigate, Route, RouterProvider, createHashRouter, createRoutesFromElements } from "react-router-dom"
 
 import Layout from "app/layout"
-import { Loading } from "components/Loading"
-import { NotFoundPage } from "components/NotFound"
-import { ProtectedRoute } from "components/ProtectedRoute"
+import { Loading, NotFoundPage, ProtectedRoute } from "components"
 import { Configuration } from "config"
 import { AppContextProvider, AuthContextProvider } from "contexts"
-import { Settings } from "luxon"
 import "./index.css"
 
 const App = lazy(() => import("app/App"))

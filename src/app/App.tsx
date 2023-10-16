@@ -8,7 +8,7 @@ import { AppContext, AuthContext } from "contexts"
 const logger = new Logger("App")
 
 function App() {
-  const { CouchdbManager } = useContext(AppContext)
+  const { CouchdbClient } = useContext(AppContext)
   const { username, userDb } = useContext(AuthContext)
 
   const designDoc = username as string
@@ -34,7 +34,7 @@ function App() {
       return
     }
 
-    CouchdbManager.db(userDb)
+    CouchdbClient.db(userDb)
       .design(designDoc)
       .view("events-build", {
         group_level: 2,
@@ -46,7 +46,7 @@ function App() {
         setProjects(projects)
         setCustomers(customers)
       })
-  }, [userDb, CouchdbManager, designDoc, project, customer])
+  }, [userDb, CouchdbClient, designDoc, project, customer])
 
   const numProjects = useCallback((customer: string) => projects.filter(key => key[0] === customer).length, [projects])
 

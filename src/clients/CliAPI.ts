@@ -14,6 +14,15 @@ export class CliAPI {
     })
   }
 
+  async publish(project: string, deliverable: string, stage: string, version: string) {
+    return await this.client.put<unknown, JobResponse, JobRequest>("/jobs", {
+      args: `delivery publish ${project} ${deliverable} ${stage} ${version}`,
+      kwargs: {
+        dry_run: true,
+      },
+    })
+  }
+
   async uploadConfiguration(
     project: string,
     deliverable: string,
@@ -21,7 +30,7 @@ export class CliAPI {
     filename: string,
     attachment_name: string,
     attachment: Blob
-  ) {
+  ): Promise<JobResponse> {
     return await this.blobToBase64(attachment).then(base64 =>
       this.client.put<unknown, JobResponse, JobRequest>("/jobs", {
         args: `delivery config ${project} ${deliverable} ${stage}`,

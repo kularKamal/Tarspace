@@ -67,7 +67,7 @@ function Page() {
   const { customer, project, deliverable, tab } = useParams()
   const navigate = useNavigate()
 
-  const { CouchdbManager } = useContext(AppContext)
+  const { CouchdbClient } = useContext(AppContext)
   const { username, userDb } = useContext(AuthContext)
   const designDoc = username as string
 
@@ -90,7 +90,7 @@ function Page() {
       return
     }
 
-    CouchdbManager.db(userDb)
+    CouchdbClient.db(userDb)
       .design(designDoc)
       .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
         reduce: true,
@@ -119,14 +119,14 @@ function Page() {
           setNotFound(true)
         }
       })
-  }, [CouchdbManager, customer, deliverable, designDoc, project, userDb])
+  }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
 
   useEffect(() => {
     if (!userDb) {
       return
     }
 
-    CouchdbManager.db(userDb)
+    CouchdbClient.db(userDb)
       .design(designDoc)
       .view<(string | undefined)[], EventDoc>("latest-published-version", {
         reduce: false,
@@ -149,7 +149,7 @@ function Page() {
         })
         setLastPublishedVersions(map)
       })
-  }, [CouchdbManager, customer, deliverable, designDoc, project, userDb])
+  }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
 
   const trackerEvents = useMemo(() => eventsList.filter(eg => eg.type === "build"), [eventsList])
 

@@ -2,6 +2,7 @@ import { Button, Card, Flex, Metric, Text, TextInput } from "@tremor/react"
 import { useContext, useRef, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
+import { IconPlanet } from "@tabler/icons-react"
 import { Container } from "components"
 import { AuthContext } from "contexts"
 import { ReactComponent as IotingaLogo } from "logo-full.svg"
@@ -62,7 +63,7 @@ function Page() {
                   type="password"
                 ></TextInput>
               </div>
-              <Button type="submit" size="lg" className="w-full mt-8">
+              <Button type="submit" size="lg" className="w-full mt-8" icon={IconPlanet}>
                 Login
               </Button>
             </form>
