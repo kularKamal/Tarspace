@@ -7,7 +7,7 @@ export type Config = {
     maxUploadFileSize: number
   }
   backend: {
-    v1: string
+    root: string
   }
   couchdb: {
     protocol: "http" | "https"
@@ -23,7 +23,7 @@ export const DEFAULT_CONFIG: Config = {
     maxUploadFileSize: 100 * 1024 * 1024, // 100MB
   },
   backend: {
-    v1: "http://iss-delivery.galaxy:8000/api/v1",
+    root: "http://iss-delivery.galaxy:8000/api/v1",
   },
   couchdb: {
     protocol: "http",
@@ -39,11 +39,11 @@ export const PRODUCTION_CONFIG: Config = {
     maxUploadFileSize: 100 * 1024 * 1024, // 100MB
   },
   backend: {
-    v1: "https://iss.tinga.io/api/v1",
+    root: "https://iss.tinga.io/api/v1",
   },
   couchdb: {
     protocol: "https",
-    host: "couchdb.tinga.io",
+    host: "iss.tinga.io",
     port: 443,
   },
 }

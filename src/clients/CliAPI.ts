@@ -11,7 +11,7 @@ export class CliAPI {
 
   constructor() {
     this.client = axios.create({
-      baseURL: Configuration.backend.v1,
+      baseURL: Configuration.backend.root,
       withCredentials: true,
     })
   }

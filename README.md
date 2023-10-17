@@ -1,35 +1,41 @@
-# Getting Started with Create React App
+# Iotinga Space
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This repo contains code for the Iotinga Space webapp, a frontend for the internal project delivery system. The app is reachable at [space.tinga.io](https://space.tinga.io)
 
-## Available Scripts
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app) and use [craco](https://craco.js.org/).
+
+## Deployment
+Use the Iotinga CLI, you known how. The CI system will take care of the rest.
+
+This project is deployed on S3 as a static website on stage `production`. These are some useful links:
+- [S3 bucket](https://s3.console.aws.amazon.com/s3/buckets/space-tinga-io?region=eu-west-1&tab=objects) (console)
+- [Cloudfront distribution](https://us-east-1.console.aws.amazon.com/cloudfront/v4/home?region=eu-west-1#/distributions/E2I1IK45FNT6XF) (console)
+
+> [!NOTE]
+> Cloudfront retains a cache of the webpage for quite a long time, it may be required to create a cache invalidation manually to see deployment results immediately.
+
+## Development
 
 In the project directory, you can run:
 
-### `npm start`
+#### `npm start`
 
-Runs the app in the development mode.\
+Runs the app in the development mode.
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-The page will reload if you make edits.\
+The page will reload if you make edits.
 You will also see any lint errors in the console.
 
-### `npm test`
+#### `npm test`
 
-Launches the test runner in the interactive watch mode.\
+Launches the test runner in the interactive watch mode.
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-### `npm run build`
+#### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Builds the app for production to the `build` folder.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
+#### `npm run eject`
 
 **Note: this is a one-way operation. Once you `eject`, you can’t go back!**
 
@@ -39,8 +45,3 @@ Instead, it will copy all the configuration files and the transitive dependencie
 
 You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
