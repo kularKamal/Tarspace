@@ -1,5 +1,6 @@
 import { Logger } from "@iotinga/ts-backpack-common"
 import axios, { AxiosInstance } from "axios"
+
 import { Configuration } from "config"
 import { JobRequest, JobResponse } from "types"
 
@@ -11,6 +12,7 @@ export class CliAPI {
   constructor() {
     this.client = axios.create({
       baseURL: Configuration.backend.v1,
+      withCredentials: true,
     })
   }
 

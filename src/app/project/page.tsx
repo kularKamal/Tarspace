@@ -3,8 +3,7 @@ import { useContext, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { IconRocketOff } from "@tabler/icons-react"
-import { ClickableCard, EventState, EventStateBadges, PageHeading } from "components"
-import { Skeleton } from "components/Skeleton"
+import { ClickableCard, EventState, EventStateBadges, PageHeading, Skeleton } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, StageInfoMap } from "types"
 import { formatTimestamp, isStageName, titlecase } from "utils"
@@ -148,31 +147,38 @@ function Page() {
                 )}
               </Flex>
 
-              <Table className="mt-4 h-full">
-                {lastPublishedVersions && Object.keys(lastPublishedVersions).length > 0 ? (
-                  <TableBody>
-                    {lastPublishedVersions[deliverable] &&
-                      Object.entries(lastPublishedVersions[deliverable]).map(([stageName, stageInfo]) => (
-                        <TableRow key={stageName + deliverable}>
-                          <TableCell>
-                            <Text>{titlecase(stageName)}</Text>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge color="gray">{stageInfo.latestVersion}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Text>{formatTimestamp(stageInfo.timestamp)}</Text>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                ) : (
+              {lastPublishedVersions && Object.keys(lastPublishedVersions).length > 0 ? (
+                <>
+                  {lastPublishedVersions[deliverable] ? (
+                    <Table className="mt-4 h-full">
+                      <TableBody>
+                        {Object.entries(lastPublishedVersions[deliverable]).map(([stageName, stageInfo]) => (
+                          <TableRow key={stageName + deliverable}>
+                            <TableCell>
+                              <Text>{titlecase(stageName)}</Text>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge color="gray">{stageInfo.latestVersion}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Text>{formatTimestamp(stageInfo.timestamp)}</Text>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <EmptyStageCard />
+                  )}
+                </>
+              ) : (
+                <Table className="mt-4 h-full">
                   <TableBody>
                     <LoadingStageRow />
                     <LoadingStageRow />
                   </TableBody>
-                )}
-              </Table>
+                </Table>
+              )}
             </ClickableCard>
           </Link>
         ))}
@@ -198,8 +204,8 @@ const LoadingStageRow = () => (
 )
 
 const EmptyStageCard = () => (
-  <Flex flexDirection="col" className="h-full space-y-8" justifyContent="center">
-    <Flex className="space-x-4" justifyContent="center">
+  <Flex flexDirection="col" className="h-full space-y-8 mt-8" justifyContent="center">
+    <Flex className="space-x-4 h-full" justifyContent="center">
       <Icon icon={IconRocketOff} size="xl" className="text-tremor-content-subtle" />
 
       <div>

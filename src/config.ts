@@ -23,7 +23,7 @@ export const DEFAULT_CONFIG: Config = {
     maxUploadFileSize: 100 * 1024 * 1024, // 100MB
   },
   backend: {
-    v1: "http://localhost:5000/api/v1",
+    v1: "http://iss-delivery.galaxy:8000/api/v1",
   },
   couchdb: {
     protocol: "http",
