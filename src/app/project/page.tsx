@@ -25,7 +25,6 @@ function Page() {
   const [deliverables, setDeliverables] = useState<string[]>([])
   const [lastPublishedVersions, setLastPublishedVersions] = useState<Record<string, StageInfoMap> | null>(null)
   const [lastBuildState, setLastBuildState] = useState<LastBuildState | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
 
   const [notFound, setNotFound] = useState(false)
   const navigate = useNavigate()
@@ -101,6 +100,7 @@ function Page() {
     CouchdbClient.db(userDb)
       .design(designDoc)
       .viewQueries<(string | undefined)[], EventDoc>("events-build", {
+        // FIXME: look for deliverables' artifacts build statuses instead
         queries: deliverables.map(d => ({
           reduce: false,
           include_docs: true,

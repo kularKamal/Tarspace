@@ -19,9 +19,6 @@ export class CliAPI {
   async publish(project: string, deliverable: string, stage: string, version: string) {
     return await this.client.put<unknown, JobResponse, JobRequest>("/jobs", {
       args: `delivery publish ${project} ${deliverable} ${stage} ${version}`,
-      kwargs: {
-        dry_run: true,
-      },
     })
   }
 
@@ -38,7 +35,6 @@ export class CliAPI {
         args: `delivery config ${project} ${deliverable} ${stage}`,
         kwargs: {
           content: `${filename}:${attachment_name}:${base64}`,
-          dry_run: true,
         },
       })
     )
