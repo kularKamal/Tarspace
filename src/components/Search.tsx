@@ -199,7 +199,9 @@ export function Search() {
             <TextInput
               type="text"
               id="default-search"
-              className="bg-tremor-background-muted focus:outline-none focus:ring-0 focus:ring-offset-0"
+              className={`focus:outline-none focus:ring-0 focus:ring-offset-0 ${
+                showResults ? "bg-tremor-background" : "bg-tremor-background-muted"
+              }`}
               placeholder="Search..."
               autoComplete="off"
               autoCorrect="off"

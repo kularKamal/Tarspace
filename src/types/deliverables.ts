@@ -5,6 +5,9 @@ export const STAGE_NAMES = {
 } as const
 
 export type StageName = (typeof STAGE_NAMES)[keyof typeof STAGE_NAMES]
+
+export const STAGES_ORDER: StageName[] = ["production", "staging", "delivery"]
+
 export type StageInfo = {
   latestVersion: string
   timestamp: string

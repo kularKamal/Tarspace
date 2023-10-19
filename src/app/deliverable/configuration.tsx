@@ -6,20 +6,21 @@ import {
   IconCloudUpload,
   IconDeviceFloppy,
   IconFileZip,
+  IconPlus,
   IconSettingsOff,
 } from "@tabler/icons-react"
-import { Button, Card, Flex, Icon, Select, SelectItem, Text, TextInput, Title } from "@tremor/react"
+import { Button, Card, Flex, Icon, Select, SelectItem, Text, Title } from "@tremor/react"
 import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror"
 import axios from "axios"
 import { EditorView } from "codemirror"
-import { Dispatch, MouseEvent, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react"
+import { MouseEvent, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { useEventListener } from "usehooks-ts"
 
 import { FileUploadButton, Modal } from "components"
 import { Configuration } from "config"
 import { AppContext, AuthContext } from "contexts"
-import { ModalToggler, useDebouncedState, useModal } from "hooks"
-import { ConfigurationDoc } from "types"
+import { ModalToggler, useModal } from "hooks"
+import { ConfigurationDoc, STAGE_NAMES } from "types"
 import {
   CONFIGURATION_FILENAME,
   FileValidationStatus,
@@ -78,7 +79,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
   const [extensions, setExtensions] = useState<Extension[]>(EXT)
   const [isSaving, setIsSaving] = useState(false)
 
-  const [selectedStage, setSelectedStage] = useState<string | null>(null)
+  const [selectedStage, setSelectedStage] = useState<string>(STAGE_NAMES.PRODUCTION)
   const [configDoc, setConfigDoc] = useState<ConfigurationDoc | null>(null)
 
   const [baseText, setBaseText] = useState<CMText>(CMText.empty)
@@ -98,8 +99,6 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
       e.returnValue = ""
     }
   })
-
-  useEffect(() => setSelectedStage(stages[0]), [stages])
 
   useEffect(() => {
     if (!userDb || !selectedStage) {
@@ -130,7 +129,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
       .then(resp => {
         setConfigDoc(resp)
       })
-      .catch(_ => {})
+      .catch(_ => setConfigDoc(null))
   }, [CouchdbClient, customer, deliverable, designDoc, project, selectedStage, userDb])
 
   const downloadAttachment = useCallback(
@@ -241,15 +240,6 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
     [CliAPIClient, customer, deliverable, project, selectedStage, toggleModal]
   )
 
-  if (!configDoc || !configDoc.configuration || !selectedStage || !attachment) {
-    return (
-      <Card className="mt-6">
-        <UploadErrorModal isShowing={isShowing} toggleModal={toggleModal} validationStatus={validationStatus} />
-        <EmptyView handleFile={handleUpload} setSelectedStage={setSelectedStage} />
-      </Card>
-    )
-  }
-
   return (
     <Card className="mt-6 p-0 min-h-[20vh]">
       <UploadErrorModal isShowing={isShowing} toggleModal={toggleModal} validationStatus={validationStatus} />
@@ -267,37 +257,41 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
           ))}
         </Select>
         <Flex justifyContent="end" alignItems="baseline" className="space-x-4">
-          <FileUploadButton
-            handleFile={handleUpload}
-            icon={IconCloudUpload}
-            variant="secondary"
-            size="xs"
-            type="submit"
-            tooltip="Upload a new configuration file"
-          />
-          <Button
-            icon={IconCloudDownload}
-            variant="secondary"
-            size="xs"
-            tooltip="Download the current configuration file"
-            onClick={_ => {
-              if (!configDoc._attachments) {
-                return
-              }
+          {configDoc && configDoc.configuration && attachment && (
+            <>
+              <FileUploadButton
+                handleFile={handleUpload}
+                icon={IconCloudUpload}
+                variant="secondary"
+                size="xs"
+                type="submit"
+                tooltip="Upload a new configuration file"
+              />
+              <Button
+                icon={IconCloudDownload}
+                variant="secondary"
+                size="xs"
+                tooltip="Download the current configuration file"
+                onClick={_ => {
+                  if (!configDoc || !configDoc._attachments) {
+                    return
+                  }
 
-              const filename = Object.keys(configDoc._attachments)[0]
-              downloadAttachment(filename).then(data => {
-                const a = document.createElement("a")
-                const url = window.URL.createObjectURL(data)
-                a.href = url
-                a.download = filename
-                a.click()
-                window.URL.revokeObjectURL(url)
-              })
-            }}
-          >
-            Download
-          </Button>
+                  const filename = Object.keys(configDoc._attachments)[0]
+                  downloadAttachment(filename).then(data => {
+                    const a = document.createElement("a")
+                    const url = window.URL.createObjectURL(data)
+                    a.href = url
+                    a.download = filename
+                    a.click()
+                    window.URL.revokeObjectURL(url)
+                  })
+                }}
+              >
+                Download
+              </Button>
+            </>
+          )}
           <Button
             icon={IconDeviceFloppy}
             onClick={handleSave}
@@ -311,16 +305,9 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
         </Flex>
       </Flex>
       {isZipConfig ? (
-        <Flex flexDirection="col" className="h-full space-y-8" justifyContent="center">
-          <Flex className="space-x-2 h-[15vh]" justifyContent="center">
-            <Icon icon={IconFileZip} size="xl" className="text-tremor-content-subtle" />
-
-            <div>
-              <Title>Configuration is archive</Title>
-              <Text className="text-tremor-content-subtle">This configuration is not editable directly.</Text>
-            </div>
-          </Flex>
-        </Flex>
+        <ArchiveView />
+      ) : !configDoc || !configDoc.configuration || !attachment ? (
+        <EmptyView handleFile={handleUpload} />
       ) : (
         <CodeMirror
           height="100%"
@@ -342,13 +329,23 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
   )
 }
 
+const ArchiveView = () => (
+  <Flex flexDirection="col" className="h-full space-y-8" justifyContent="center">
+    <Flex className="space-x-2 h-[15vh]" justifyContent="center">
+      <Icon icon={IconFileZip} size="xl" className="text-tremor-content-subtle" />
+
+      <div>
+        <Title>Configuration is archive</Title>
+        <Text className="text-tremor-content-subtle">This configuration is not editable directly.</Text>
+      </div>
+    </Flex>
+  </Flex>
+)
+
 type EmptyViewProps = {
   handleFile: (file: File) => void
-  setSelectedStage: Dispatch<SetStateAction<string | null>>
 }
-function EmptyView({ handleFile, setSelectedStage }: EmptyViewProps) {
-  const [stageName, setStageName] = useDebouncedState("", 100)
-
+function EmptyView({ handleFile }: EmptyViewProps) {
   return (
     <Flex className="min-h-[50vh]" justifyContent="around">
       <Flex flexDirection="col" className="h-full w-1/3 space-y-8" justifyContent="center">
@@ -357,21 +354,19 @@ function EmptyView({ handleFile, setSelectedStage }: EmptyViewProps) {
 
           <div>
             <Title>No configuration found</Title>
-            <Text className="text-tremor-content-subtle">This deliverable has not been configured yet.</Text>
+            <Text className="text-tremor-content-subtle">This stage has not been configured yet.</Text>
           </div>
         </Flex>
-        <Flex className="space-x-4 w-full" justifyContent="center">
-          <TextInput placeholder="Name a stage..." onChange={e => setStageName(e.target.value)} />
-          <FileUploadButton
-            handleFile={f => {
-              setSelectedStage(stageName)
-              handleFile(f)
+        <Flex className="space-x-4 w-full" justifyContent="center" alignItems="stretch">
+          <Button
+            icon={IconPlus}
+            onClick={() => {
+              handleFile(new File([""], "config.yaml", { type: "application/x-yaml" }))
             }}
-            icon={IconCloudUpload}
-            text="Upload configuration"
-            variant="secondary"
-            disabled={stageName === ""}
-          />
+          >
+            Create
+          </Button>
+          <FileUploadButton handleFile={handleFile} icon={IconCloudUpload} text="Upload" variant="secondary" />
         </Flex>
       </Flex>
     </Flex>

@@ -25,7 +25,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { type VersionEvents } from "app/deliverable/versions"
 import { EventState, EventStateBadges, EventStateMessages, Loading, PageHeading } from "components"
 import { AppContext, AuthContext } from "contexts"
-import { EventDoc, EventGroup, SingleEvent, StageInfoMap } from "types"
+import { EventDoc, EventGroup, STAGES_ORDER, STAGE_NAMES, SingleEvent, StageInfoMap } from "types"
 import { isInProgress, isStageName, isTimedOut, titlecase } from "utils"
 
 const ConfigurationEditor = lazy(() => import("app/deliverable/configuration"))
@@ -128,25 +128,29 @@ function Page() {
 
     CouchdbClient.db(userDb)
       .design(designDoc)
-      .view<(string | undefined)[], EventDoc>("latest-published-version", {
-        reduce: false,
-        include_docs: true,
-        start_key: [customer, project, deliverable],
-        end_key: [customer, project, deliverable, "\uffff"],
+      .viewQueries<(string | undefined)[], EventDoc>("latest-published-version", {
+        queries: Object.values(STAGE_NAMES).map(stageName => ({
+          reduce: false,
+          include_docs: true,
+          start_key: [customer, project, deliverable, stageName],
+          end_key: [customer, project, deliverable, stageName],
+        })),
       })
       .then(resp => {
         const map: StageInfoMap = {}
-        resp.rows.forEach(row => {
-          const stageName = row.key.pop()
-          if (isStageName(stageName) && row.doc) {
-            map[stageName] = {
-              latestVersion: row.value as string,
-              timestamp: row.doc.timestamp,
-              configurationId: row.doc.config_id as string,
-              repository: row.doc.repository,
+        resp.results
+          .flatMap(res => res.rows)
+          .forEach(row => {
+            const stageName = row.key.pop()
+            if (isStageName(stageName) && row.doc) {
+              map[stageName] = {
+                latestVersion: row.value as string,
+                timestamp: row.doc.timestamp,
+                configurationId: row.doc.config_id as string,
+                repository: row.doc.repository,
+              }
             }
-          }
-        })
+          })
         setLastPublishedVersions(map)
       })
   }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
@@ -193,7 +197,7 @@ function Page() {
                 customer={customer}
                 project={project}
                 deliverable={deliverable}
-                stages={Object.keys(lastPublishedVersions)}
+                stages={STAGES_ORDER}
               />
             ) : null}
           </CustomTabPanel>

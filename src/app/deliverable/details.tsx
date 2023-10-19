@@ -4,6 +4,7 @@ import {
   IconChecklist,
   IconCloudDownload,
   IconRocket,
+  IconRocketOff,
   IconSettingsOff,
 } from "@tabler/icons-react"
 import {
@@ -30,7 +31,7 @@ import urlJoin from "url-join"
 import { BuildsTracker, Modal, Skeleton } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { useModal } from "hooks"
-import { DeliverableDoc, EventGroup, StageInfo, StageInfoMap, StageName } from "types"
+import { DeliverableDoc, EventGroup, STAGES_ORDER, STAGE_NAMES, StageInfo, StageInfoMap, StageName } from "types"
 import { formatTimestamp, semverCompare, titlecase } from "utils"
 
 export type DetailsViewProps = {
@@ -89,43 +90,19 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
 
   return (
     <>
-      <Grid numItemsMd={2} numItemsLg={Math.min(3, stagesEntries.length)} className="gap-6 mt-6">
+      <Grid numItemsMd={1} numItemsLg={3} className="gap-6 mt-6">
         {stagesEntries.length === 0 ? (
           <>
             <LoadingStageCard />
             <LoadingStageCard />
+            <LoadingStageCard />
           </>
         ) : (
-          stagesEntries.map(([stageName, info]) => (
-            <Card key={stageName}>
-              <Flex flexDirection="row" justifyContent="between" alignItems="baseline">
-                <Metric>{titlecase(stageName)}</Metric>
-                {uploads[info.latestVersion] && (
-                  <Link to={uploads[info.latestVersion]}>
-                    <Button icon={IconCloudDownload} variant="light" size="lg" tooltip="Download deliverable files" />
-                  </Link>
-                )}
-              </Flex>
-              <List className="mt-4">
-                <ListItem>
-                  <Flex>
-                    <Text>Current version</Text>
-                    <Link to={info.repository ? urlJoin(info.repository, `./tree/v${info.latestVersion}`) : ""}>
-                      <Button icon={IconBrandGithub} variant="light" tooltip="See the source code for this release">
-                        {info.latestVersion}
-                      </Button>
-                    </Link>
-                  </Flex>
-                </ListItem>
-                <ListItem>
-                  <Flex>
-                    <Text>Last update date</Text>
-                    <Text>{formatTimestamp(info.timestamp, DateTime.DATETIME_MED)}</Text>
-                  </Flex>
-                </ListItem>
-              </List>
-            </Card>
-          ))
+          Object.values(STAGE_NAMES)
+            .sort((a, b) => STAGES_ORDER.indexOf(a) - STAGES_ORDER.indexOf(b))
+            .map(stageName => (
+              <StageCard uploads={uploads} info={stages[stageName]} key={stageName} stageName={stageName} />
+            ))
         )}
       </Grid>
       <Divider className="lg:hidden" />
@@ -145,8 +122,46 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
     </>
   )
 }
-
 export default DetailsView
+
+type StageCardProps = {
+  uploads: VersionUploads
+  info?: StageInfo
+  stageName: string
+}
+const StageCard = ({ uploads, info, stageName }: StageCardProps) =>
+  info ? (
+    <Card>
+      <Flex flexDirection="row" justifyContent="between" alignItems="baseline">
+        <Metric>{titlecase(stageName)}</Metric>
+        {uploads[info.latestVersion] && (
+          <Link to={uploads[info.latestVersion]}>
+            <Button icon={IconCloudDownload} variant="light" size="lg" tooltip="Download deliverable files" />
+          </Link>
+        )}
+      </Flex>
+      <List className="mt-4">
+        <ListItem>
+          <Flex>
+            <Text>Current version</Text>
+            <Link to={info.repository ? urlJoin(info.repository, `./tree/v${info.latestVersion}`) : ""}>
+              <Button icon={IconBrandGithub} variant="light" tooltip="See the source code for this release">
+                {info.latestVersion}
+              </Button>
+            </Link>
+          </Flex>
+        </ListItem>
+        <ListItem>
+          <Flex>
+            <Text>Last update date</Text>
+            <Text>{formatTimestamp(info.timestamp, DateTime.DATETIME_MED)}</Text>
+          </Flex>
+        </ListItem>
+      </List>
+    </Card>
+  ) : (
+    <EmptyStageCard stageName={stageName} />
+  )
 
 type PublishCardProps = {
   deliverable?: string
@@ -310,5 +325,21 @@ const LoadingStageCard = () => (
         </Flex>
       </ListItem>
     </List>
+  </Card>
+)
+
+const EmptyStageCard = ({ stageName }: { stageName: string }) => (
+  <Card className="h-full">
+    <Flex flexDirection="col" className="space-y-8" alignItems="start">
+      <Metric>{titlecase(stageName)}</Metric>
+      <Flex className="space-x-4" justifyContent="center">
+        <Icon icon={IconRocketOff} size="xl" className="text-tremor-content-subtle" />
+
+        <div>
+          <Title>No deployment found</Title>
+          <Text className="text-tremor-content-subtle">There{"'"}s nothing on this stage.</Text>
+        </div>
+      </Flex>
+    </Flex>
   </Card>
 )
