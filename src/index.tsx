@@ -3,6 +3,7 @@ import React, { Suspense, lazy } from "react"
 import ReactDOM from "react-dom/client"
 import { Navigate, Route, RouterProvider, createHashRouter, createRoutesFromElements } from "react-router-dom"
 
+import { Layout as DashboardLayout } from "app/dashboard"
 import Layout from "app/layout"
 import { Loading, NotFoundPage, ProtectedRoute } from "components"
 import { Configuration } from "config"
@@ -10,6 +11,7 @@ import { AppContextProvider, AuthContextProvider } from "contexts"
 import "./index.css"
 
 const App = lazy(() => import("app/App"))
+const Dashboard = lazy(() => import("app/dashboard"))
 const Deliverable = lazy(() => import("app/deliverable"))
 const Customer = lazy(() => import("app/customer"))
 const Project = lazy(() => import("app/project"))
@@ -36,6 +38,17 @@ const router = createHashRouter(
           <Route path=":customer/:project/:deliverable/:tab" element={<Deliverable />} />
         </Route>
       </Route>
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              {/* <NavBar /> */}
+              <Dashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      ></Route>
       <Route path="*" element={<NotFoundPage />}></Route>
     </>
   )

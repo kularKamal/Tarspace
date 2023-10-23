@@ -7,7 +7,7 @@ import { AuthContext } from "contexts"
 import { LocationState } from "types"
 
 export type ProtectedRouteProps = {
-  children: ReactElement
+  children: ReactElement | ReactElement[]
 }
 
 export function ProtectedRoute(props: ProtectedRouteProps) {
@@ -32,7 +32,7 @@ export function ProtectedRoute(props: ProtectedRouteProps) {
   }
 
   if (userCtx === undefined) {
-    return <Navigate to="login" replace state={{ from: location } as LocationState} />
+    return <Navigate to="/login" replace state={{ from: location } as LocationState} />
   }
 
   return <>{props.children}</> || <Outlet />

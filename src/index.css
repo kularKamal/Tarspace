@@ -19,15 +19,15 @@
   -webkit-text-size-adjust: 100%;
 }
 
-html {
-  /* Avoids layout jumping when scroll bars appear */
-  margin-left: calc(100vw - 100%);
-}
-
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+body:not(.overflow-hidden) {
+  /* Avoids layout jumping when scroll bars appear */
+  margin-left: calc(100vw - 100%);
 }
 
 #root {

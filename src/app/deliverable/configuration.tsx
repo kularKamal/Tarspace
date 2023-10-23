@@ -86,6 +86,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
   const [currentText, setCurrentText] = useState(baseText)
   const configString = baseText.toString()
 
+  // const [attachment, setAttachment] = useState<[string, CouchdbDocAttachment] | null>(null)
   const attachment = configDoc && configDoc._attachments ? Object.entries(configDoc._attachments)[0] : null
   const isZipConfig = attachment ? attachment[1].content_type === "application/zip" : false
 
@@ -132,6 +133,14 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
       .catch(_ => setConfigDoc(null))
   }, [CouchdbClient, customer, deliverable, designDoc, project, selectedStage, userDb])
 
+  // useEffect(() => {
+  //   if (!configDoc) {
+  //     return
+  //   }
+
+  //   setAttachment(configDoc._attachments ? Object.entries(configDoc._attachments)[0] : null)
+  // }, [configDoc])
+
   const downloadAttachment = useCallback(
     (filename: string) => {
       if (!configDoc) {
@@ -157,11 +166,11 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
   )
 
   useEffect(() => {
-    if (!configDoc || !configDoc._attachments) {
+    if (!attachment) {
       return
     }
 
-    const filename = Object.keys(configDoc._attachments)[0]
+    const filename = attachment[0]
 
     downloadAttachment(filename)
       .then(data => {
@@ -183,11 +192,11 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
         setCurrentText(text)
       })
       .catch(_ => {})
-  }, [configDoc, configString, downloadAttachment, userDb])
+  }, [attachment, configString, downloadAttachment, userDb])
 
   const handleSave = useCallback(
     async (event: MouseEvent<HTMLButtonElement>) => {
-      if (!userDb || !configDoc || !selectedStage || !attachment) {
+      if (!userDb || !configDoc?.configuration || !selectedStage) {
         return
       }
 
@@ -198,12 +207,17 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
         [project, customer].join("@"),
         deliverable,
         selectedStage,
-        configDoc.configuration || "",
-        attachment[0],
+        configDoc.configuration || "config.yaml",
+        attachment ? attachment[0] : "config.yaml",
         blob
-      ).then(resp => {
-        setIsSaving(false)
-      })
+      ).then(
+        resp => {
+          setIsSaving(false)
+        },
+        err => {
+          setIsSaving(false)
+        }
+      )
     },
     [CliAPIClient, attachment, configDoc, currentText, customer, deliverable, project, selectedStage, userDb]
   )
@@ -233,9 +247,14 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
         file.type === SUPPORTED_MIMETYPES.zip ? CONFIGURATION_FILENAME : file.name,
         file.name,
         file
-      ).then(resp => {
-        setIsSaving(false)
-      })
+      ).then(
+        resp => {
+          setIsSaving(false)
+        },
+        err => {
+          setIsSaving(false)
+        }
+      )
     },
     [CliAPIClient, customer, deliverable, project, selectedStage, toggleModal]
   )
@@ -306,8 +325,20 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
       </Flex>
       {isZipConfig ? (
         <ArchiveView />
-      ) : !configDoc || !configDoc.configuration || !attachment ? (
-        <EmptyView handleFile={handleUpload} />
+      ) : !configDoc ? (
+        <EmptyView
+          handleFile={handleUpload}
+          handleCreate={() =>
+            setConfigDoc({
+              configuration: "config.yaml",
+              type: "configuration",
+              project: project,
+              deliverable: deliverable,
+              timestamp: "",
+              stage: selectedStage,
+            })
+          }
+        />
       ) : (
         <CodeMirror
           height="100%"
@@ -344,8 +375,9 @@ const ArchiveView = () => (
 
 type EmptyViewProps = {
   handleFile: (file: File) => void
+  handleCreate: () => void
 }
-function EmptyView({ handleFile }: EmptyViewProps) {
+function EmptyView({ handleFile, handleCreate }: EmptyViewProps) {
   return (
     <Flex className="min-h-[50vh]" justifyContent="around">
       <Flex flexDirection="col" className="h-full w-1/3 space-y-8" justifyContent="center">
@@ -361,7 +393,8 @@ function EmptyView({ handleFile }: EmptyViewProps) {
           <Button
             icon={IconPlus}
             onClick={() => {
-              handleFile(new File([""], "config.yaml", { type: "application/x-yaml" }))
+              // handleFile(new File([""], "config.yaml", { type: "application/x-yaml" }))
+              handleCreate()
             }}
           >
             Create

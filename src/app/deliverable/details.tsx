@@ -332,7 +332,7 @@ const EmptyStageCard = ({ stageName }: { stageName: string }) => (
   <Card className="h-full">
     <Flex flexDirection="col" className="space-y-8" alignItems="start">
       <Metric>{titlecase(stageName)}</Metric>
-      <Flex className="space-x-4" justifyContent="center">
+      <Flex className="space-x-2" justifyContent="center">
         <Icon icon={IconRocketOff} size="xl" className="text-tremor-content-subtle" />
 
         <div>
