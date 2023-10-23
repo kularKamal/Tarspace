@@ -22,4 +22,6 @@ deliverables:
     artifacts:
       - iotinga-delivery-web-app
     publish:
-      - shell: aws s3 sync build/ s3://space-tinga-io
+      - shell: |
+          aws s3 sync build/ s3://space-tinga-io
+          aws cloudfront create-invalidation --distribution-id "E2I1IK45FNT6XF" --paths '/*'
