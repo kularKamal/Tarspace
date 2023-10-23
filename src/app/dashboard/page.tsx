@@ -32,10 +32,6 @@ export default function Page() {
   const { username, userDb } = useContext(AuthContext)
 
   const designDoc = username as string
-  // if (userCtx !== undefined && userCtx.roles.includes("_admin")) {
-  //   dbName = "companylog-ia6ch3s4"
-  //   designDoc = "companylog"
-  // }
 
   const [deliverablesKeys, setDeliverablesKeys] = useState<string[][]>([])
   const [deliverableDocs, setDeliverableDocs] = useState<DeliverableDoc[]>([])
@@ -79,10 +75,7 @@ export default function Page() {
         })),
       })
       .then(resp => {
-        setDeliverableDocs(
-          resp.results.flatMap(res => res.rows).flatMap(row => row.doc || [])
-          // .flatMap(doc => doc.artifacts.map(a => [...doc.project.split("@").reverse(), a]))
-        )
+        setDeliverableDocs(resp.results.flatMap(res => res.rows).flatMap(row => row.doc || []))
       })
   }, [CouchdbClient, deliverablesKeys, designDoc, userDb])
 
@@ -93,27 +86,35 @@ export default function Page() {
 
     CouchdbClient.db(userDb)
       .design(designDoc)
-      .view<(string | undefined)[], EventDoc>("latest-published-version", {
-        reduce: false,
-        include_docs: true,
+      .viewQueries<string[], EventDoc>("latest-published-version", {
+        queries: deliverablesKeys.map(key => ({
+          reduce: false,
+          include_docs: true,
+          limit: 1,
+          start_key: [...key, "\uffff"],
+          end_key: key,
+          descending: true,
+        })),
       })
       .then(resp => {
         const map: Record<string, StageInfoMap> = {}
 
-        resp.rows.forEach(row => {
-          const stageName = row.key.pop()
-          const deliverableName = row.key.pop() as string
+        resp.results
+          .flatMap(res => res.rows)
+          .forEach(row => {
+            const stageName = row.key.pop()
+            const deliverableName = row.key.pop() as string
 
-          deliverableName in map || (map[deliverableName] = {})
-          if (isStageName(stageName) && row.doc) {
-            map[deliverableName][stageName] = {
-              latestVersion: row.value as string,
-              timestamp: row.doc.timestamp,
-              configurationId: row.doc.config_id as string,
-              repository: row.doc.repository,
+            deliverableName in map || (map[deliverableName] = {})
+            if (isStageName(stageName) && row.doc) {
+              map[deliverableName][stageName] = {
+                latestVersion: row.value as string,
+                timestamp: row.doc.timestamp,
+                configurationId: row.doc.config_id as string,
+                repository: row.doc.repository,
+              }
             }
-          }
-        })
+          })
         setLastPublishedVersions(map)
       })
   }, [CouchdbClient, deliverablesKeys, designDoc, userDb])
