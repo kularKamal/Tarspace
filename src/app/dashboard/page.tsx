@@ -266,26 +266,27 @@ type DashboardCardProps = {
   lastPublishedVersion: LastPublishedVersionMap[keyof LastPublishedVersionMap]
 }
 const DashboardCard = memo(({ lastPublishedVersion, deliverable, buildState }: DashboardCardProps) => {
-  // const [customer, project, deliverable] = deliverableKey
+  const getBgClass = (state: EventState, className: string) =>
+    twMerge(backgroundClass[state] || backgroundClass["timedOut"], className)
+
+  const getTextClass = (state: EventState, className: string) =>
+    twMerge(textClass[state] || textClass["timedOut"], className)
 
   return (
-    <ClickableCard className={twMerge(backgroundClass[buildState], "px-2 py-1 border-2 h-full")}>
-      <h4 className={twMerge(textClass[buildState], "font-semibold truncate")}>{deliverable.name}</h4>
-      <h4 className={twMerge(textClass[buildState], "font-semibold truncate text-tremor-dashboard")}>
+    <ClickableCard className={getBgClass(buildState, "px-2 py-1 border-2 h-full")} data-state={buildState}>
+      <h4 className={getTextClass(buildState, "font-semibold truncate")}>{deliverable.name}</h4>
+      <h4 className={getTextClass(buildState, "font-semibold truncate text-tremor-dashboard")}>
         {deliverable.project}
       </h4>
-      {/* <Text>{DateTime.fromISO(lastPublishedVersion[stageName]!.timestamp).toRelative({ style: "narrow" })}</Text> */}
       {lastPublishedVersion && (
-        <Grid className="mt-4 w-full gap-1" numItems={3}>
+        <Grid className="mt-2 w-full gap-1" numItems={3}>
           {Object.keys(lastPublishedVersion).length > 0 ? (
             Object.values(STAGE_NAMES)
               .sort((a, b) => STAGES_ORDER.indexOf(a) - STAGES_ORDER.indexOf(b))
               .map(stageName =>
                 stageName && lastPublishedVersion[stageName] ? (
                   <Flex className="space-y-1" alignItems="center" flexDirection="col" key={stageName + deliverable}>
-                    <Bold className={twMerge(textClass[buildState], "text-tremor-dashboard")}>
-                      {titlecase(stageName)}
-                    </Bold>
+                    <Bold className={getTextClass(buildState, "text-tremor-dashboard")}>{titlecase(stageName)}</Bold>
                     <Badge color="gray" size="xs" className="[&>p]:text-tremor-label">
                       {lastPublishedVersion[stageName]!.latestVersion}
                     </Badge>
@@ -294,9 +295,7 @@ const DashboardCard = memo(({ lastPublishedVersion, deliverable, buildState }: D
                     </p>
                   </Flex>
                 ) : (
-                  <Flex key={stageName + deliverable} justifyContent="center">
-                    {/* <Icon icon={IconRocketOff} size="lg" color="gray" /> */}
-                  </Flex>
+                  <div key={stageName + deliverable} />
                 )
               )
           ) : (
