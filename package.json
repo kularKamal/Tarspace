@@ -26,7 +26,7 @@
     "@iotinga/ts-backpack-common": "^2.2.0",
     "@iotinga/ts-backpack-couchdb-client": "^2.0.10",
     "@tabler/icons-react": "^2.39.0",
-    "@tremor/react": "^3.9.2",
+    "@tremor/react": "^3.10.0",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.58",
     "@types/react": "^18.2.28",

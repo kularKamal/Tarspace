@@ -5,7 +5,7 @@ import { DateTime } from "luxon"
 import { Skeleton } from "components"
 import { memo, useMemo } from "react"
 import { EventGroup } from "types"
-import { formatTimestamp, sortEventGroupsByTime } from "utils"
+import { formatTimestamp, isTimedOut, sortEventGroupsByTime } from "utils"
 
 const MAX_TRACKED_EVENTS = 36
 
@@ -26,6 +26,10 @@ const TrackerData: Record<string, TrackerDatum> = {
   TIMED_OUT: {
     color: "gray",
     tooltip: "Timed out",
+  },
+  IN_PROGRESS: {
+    color: "yellow",
+    tooltip: "In progress",
   },
   EMPTY: {
     color: "neutral",
@@ -56,7 +60,11 @@ export const BuildsTracker = memo(({ trackerEvents }: BuildsTrackerProps) => {
             return { ...TrackerData.SUCCESS, tooltip }
           }
 
-          return { ...TrackerData.TIMED_OUT, tooltip }
+          if (isTimedOut(eg)) {
+            return { ...TrackerData.TIMED_OUT, tooltip }
+          }
+
+          return { ...TrackerData.IN_PROGRESS, tooltip }
         })
       ),
     [sortedEvents]
