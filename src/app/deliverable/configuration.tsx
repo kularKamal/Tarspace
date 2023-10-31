@@ -14,7 +14,7 @@ import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror"
 import axios from "axios"
 import { EditorView } from "codemirror"
 import { MouseEvent, useCallback, useContext, useEffect, useRef, useState } from "react"
-import { useEventListener } from "usehooks-ts"
+import { useDarkMode, useEventListener } from "usehooks-ts"
 
 import { FileUploadButton, Modal } from "components"
 import { Configuration } from "config"
@@ -30,7 +30,7 @@ import {
   validateFile,
 } from "utils"
 
-const EXT: Extension[] = [
+const getExt = (dark: boolean): Extension[] => [
   EditorView.theme(
     {
       ".cm-scroller": {
@@ -59,7 +59,7 @@ const EXT: Extension[] = [
       },
     },
     {
-      dark: false,
+      dark,
     }
   ),
 ]
@@ -75,8 +75,10 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
   const { username, userDb } = useContext(AuthContext)
   const designDoc = username as string
 
+  const { isDarkMode } = useDarkMode()
+
   const editor = useRef<ReactCodeMirrorRef>(null)
-  const [extensions, setExtensions] = useState<Extension[]>(EXT)
+  const [extensions, setExtensions] = useState<Extension[]>(getExt(isDarkMode))
   const [isSaving, setIsSaving] = useState(false)
 
   const [selectedStage, setSelectedStage] = useState<string>(STAGE_NAMES.PRODUCTION)
@@ -86,9 +88,12 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
   const [currentText, setCurrentText] = useState(baseText)
   const configString = baseText.toString()
 
-  // const [attachment, setAttachment] = useState<[string, CouchdbDocAttachment] | null>(null)
   const attachment = configDoc && configDoc._attachments ? Object.entries(configDoc._attachments)[0] : null
   const isZipConfig = attachment ? attachment[1].content_type === "application/zip" : false
+
+  useEffect(() => {
+    setExtensions(getExt(isDarkMode))
+  }, [isDarkMode])
 
   useEventListener("beforeunload", e => {
     if (!currentText || !baseText) {
@@ -132,14 +137,6 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
       })
       .catch(_ => setConfigDoc(null))
   }, [CouchdbClient, customer, deliverable, designDoc, project, selectedStage, userDb])
-
-  // useEffect(() => {
-  //   if (!configDoc) {
-  //     return
-  //   }
-
-  //   setAttachment(configDoc._attachments ? Object.entries(configDoc._attachments)[0] : null)
-  // }, [configDoc])
 
   const downloadAttachment = useCallback(
     (filename: string) => {
@@ -345,7 +342,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
           width="100%"
           value={configString}
           extensions={extensions}
-          theme="light"
+          theme={isDarkMode ? "dark" : "light"}
           ref={editor}
           onChange={(_, viewUpdate) => {
             if (viewUpdate.docChanged) {

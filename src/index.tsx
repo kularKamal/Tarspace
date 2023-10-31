@@ -43,7 +43,6 @@ const router = createHashRouter(
         element={
           <ProtectedRoute>
             <DashboardLayout>
-              {/* <NavBar /> */}
               <Dashboard />
             </DashboardLayout>
           </ProtectedRoute>

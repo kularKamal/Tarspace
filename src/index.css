@@ -25,6 +25,10 @@ body {
   min-height: 100vh;
 }
 
+body * {
+  @apply transition-colors duration-200;
+}
+
 body:not(.overflow-hidden) {
   /* Avoids layout jumping when scroll bars appear */
   margin-left: calc(100vw - 100%);
