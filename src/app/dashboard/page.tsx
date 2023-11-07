@@ -38,7 +38,7 @@ export default function Page() {
   const [lastPublishedVersions, setLastPublishedVersions] = useState<LastPublishedVersionMap | null>(null)
   const [lastBuildState, setLastBuildState] = useState<LastBuildState | null>(null)
 
-  useHtmlClass(["dark", "overflow-hidden"])
+  useHtmlClass(["scrollbar-hidden", "dark"])
 
   useEffect(() => {
     if (!userDb) {

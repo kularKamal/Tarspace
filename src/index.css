@@ -29,6 +29,15 @@ body * {
   @apply transition-colors duration-200;
 }
 
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
 body:not(.overflow-hidden) {
   /* Avoids layout jumping when scroll bars appear */
   margin-left: calc(100vw - 100%);
