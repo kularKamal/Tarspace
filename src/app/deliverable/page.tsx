@@ -26,7 +26,7 @@ import { type VersionEvents } from "app/deliverable/versions"
 import { EventState, EventStateBadges, EventStateMessages, Loading, PageHeading } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, STAGES_ORDER, STAGE_NAMES, SingleEvent, StageInfoMap } from "types"
-import { isInProgress, isStageName, isTimedOut, titlecase } from "utils"
+import { isInProgress, isStageName, isTimedOut, semverCompare, titlecase } from "utils"
 
 const ConfigurationEditor = lazy(() => import("app/deliverable/configuration"))
 const DetailsView = lazy(() => import("app/deliverable/details"))
@@ -139,6 +139,10 @@ function Page() {
       .then(resp => {
         const map: StageInfoMap = {}
         resp.results
+          .map(res => ({
+            ...res,
+            rows: [...res.rows.sort((a, b) => semverCompare(a.doc?.version as string, b.doc?.version as string))],
+          }))
           .flatMap(res => res.rows)
           .forEach(row => {
             const stageName = row.key.pop()

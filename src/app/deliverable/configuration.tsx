@@ -273,7 +273,7 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
           ))}
         </Select>
         <Flex justifyContent="end" alignItems="baseline" className="space-x-4">
-          {configDoc && configDoc.configuration && attachment && (
+          {configDoc && attachment && (
             <>
               <FileUploadButton
                 handleFile={handleUpload}
