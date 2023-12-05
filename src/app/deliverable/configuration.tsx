@@ -13,7 +13,7 @@ import { Button, Card, Flex, Icon, Select, SelectItem, Text, Title } from "@trem
 import CodeMirror, { ReactCodeMirrorRef } from "@uiw/react-codemirror"
 import axios from "axios"
 import { EditorView } from "codemirror"
-import { MouseEvent, useCallback, useContext, useEffect, useRef, useState } from "react"
+import { MouseEvent, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { useDarkMode, useEventListener } from "usehooks-ts"
 
 import { FileUploadButton, Modal } from "components"
@@ -88,7 +88,10 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
   const [currentText, setCurrentText] = useState(baseText)
   const configString = baseText.toString()
 
-  const attachment = configDoc && configDoc._attachments ? Object.entries(configDoc._attachments)[0] : null
+  const attachment = useMemo(
+    () => (configDoc && configDoc._attachments ? Object.entries(configDoc._attachments)[0] : null),
+    [configDoc]
+  )
   const isZipConfig = attachment ? attachment[1].content_type === "application/zip" : false
 
   useEffect(() => {
@@ -191,70 +194,64 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
       .catch(_ => {})
   }, [attachment, configString, downloadAttachment, userDb])
 
-  const handleSave = useCallback(
-    async (event: MouseEvent<HTMLButtonElement>) => {
-      if (!userDb || !configDoc?.configuration || !selectedStage) {
-        return
+  const handleSave = async (event: MouseEvent<HTMLButtonElement>) => {
+    if (!userDb || !configDoc?.configuration || !selectedStage) {
+      return
+    }
+
+    setIsSaving(true)
+
+    const blob = new Blob([currentText.toString()])
+    CliAPIClient.uploadConfiguration(
+      [project, customer].join("@"),
+      deliverable,
+      selectedStage,
+      configDoc.configuration || "config.yaml",
+      attachment ? attachment[0] : "config.yaml",
+      blob
+    ).then(
+      resp => {
+        setIsSaving(false)
+      },
+      err => {
+        setIsSaving(false)
       }
-
-      setIsSaving(true)
-
-      const blob = new Blob([currentText.toString()])
-      CliAPIClient.uploadConfiguration(
-        [project, customer].join("@"),
-        deliverable,
-        selectedStage,
-        configDoc.configuration || "config.yaml",
-        attachment ? attachment[0] : "config.yaml",
-        blob
-      ).then(
-        resp => {
-          setIsSaving(false)
-        },
-        err => {
-          setIsSaving(false)
-        }
-      )
-    },
-    [CliAPIClient, attachment, configDoc, currentText, customer, deliverable, project, selectedStage, userDb]
-  )
+    )
+  }
 
   const { isShowing, toggle: toggleModal } = useModal()
   const [validationStatus, setValidationStatus] = useState<FileValidationStatus | null>(null)
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      if (!selectedStage) {
-        return
+  const handleUpload = async (file: File) => {
+    if (!selectedStage) {
+      return
+    }
+
+    const validation = await validateFile(file)
+    if (!validation.valid) {
+      setValidationStatus(validation)
+      toggleModal(true)
+      return
+    }
+
+    setIsSaving(true)
+
+    CliAPIClient.uploadConfiguration(
+      [project, customer].join("@"),
+      deliverable,
+      selectedStage,
+      file.type === SUPPORTED_MIMETYPES.zip ? CONFIGURATION_FILENAME : file.name,
+      file.name,
+      file
+    ).then(
+      resp => {
+        setIsSaving(false)
+      },
+      err => {
+        setIsSaving(false)
       }
-
-      const validation = await validateFile(file)
-      if (!validation.valid) {
-        setValidationStatus(validation)
-        toggleModal(true)
-        return
-      }
-
-      setIsSaving(true)
-
-      CliAPIClient.uploadConfiguration(
-        [project, customer].join("@"),
-        deliverable,
-        selectedStage,
-        file.type === SUPPORTED_MIMETYPES.zip ? CONFIGURATION_FILENAME : file.name,
-        file.name,
-        file
-      ).then(
-        resp => {
-          setIsSaving(false)
-        },
-        err => {
-          setIsSaving(false)
-        }
-      )
-    },
-    [CliAPIClient, customer, deliverable, project, selectedStage, toggleModal]
-  )
+    )
+  }
 
   return (
     <Card className="mt-6 p-0 min-h-[20vh]">
