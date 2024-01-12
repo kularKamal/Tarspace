@@ -53,6 +53,7 @@ export type DeliverableDoc = CouchdbDoc & {
   artifacts: string[]
   publish: PublishStep[]
   uploads?: Record<string, string>
+  docs?: string
 }
 
 export type EventDoc = CouchdbDoc & {

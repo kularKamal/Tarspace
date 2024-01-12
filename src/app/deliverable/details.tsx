@@ -3,6 +3,7 @@ import {
   IconBrandGithub,
   IconChecklist,
   IconCloudDownload,
+  IconExternalLink,
   IconRocket,
   IconRocketOff,
   IconSettingsOff,
@@ -39,7 +40,13 @@ export type DetailsViewProps = {
   trackerEvents: EventGroup[]
 }
 
-type VersionUploads = Record<string, string>
+type DeliverableVersionInfo = Record<
+  string,
+  {
+    zip: string
+    docs?: string
+  }
+>
 
 function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
   const { customer, project, deliverable } = useParams()
@@ -48,7 +55,7 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
   const { username, userDb } = useContext(AuthContext)
   const designDoc = username as string
 
-  const [uploads, setUploads] = useState<VersionUploads>({})
+  const [uploads, setUploads] = useState<DeliverableVersionInfo>({})
 
   useEffect(() => {
     if (!userDb) {
@@ -66,10 +73,17 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
         })),
       })
       .then(resp => {
-        const map: VersionUploads = {}
+        const map: DeliverableVersionInfo = {}
         resp.results
           .flatMap(res => (res.rows[0].doc ? [res.rows[0].doc] : []))
-          .forEach(doc => doc.uploads && (map[doc.version] = Object.values(doc.uploads)[0]))
+          .forEach(
+            doc =>
+              doc.uploads &&
+              (map[doc.version] = {
+                zip: Object.values(doc.uploads)[0],
+                docs: doc.docs,
+              })
+          )
 
         setUploads(map)
       })
@@ -125,7 +139,7 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
 export default DetailsView
 
 type StageCardProps = {
-  uploads: VersionUploads
+  uploads: DeliverableVersionInfo
   info?: StageInfo
   stageName: string
 }
@@ -135,7 +149,7 @@ const StageCard = ({ uploads, info, stageName }: StageCardProps) =>
       <Flex flexDirection="row" justifyContent="between" alignItems="baseline">
         <Metric>{titlecase(stageName)}</Metric>
         {uploads[info.latestVersion] && (
-          <Link to={uploads[info.latestVersion]}>
+          <Link to={uploads[info.latestVersion].zip}>
             <Button icon={IconCloudDownload} variant="light" size="lg" tooltip="Download deliverable files" />
           </Link>
         )}
@@ -149,6 +163,20 @@ const StageCard = ({ uploads, info, stageName }: StageCardProps) =>
                 {info.latestVersion}
               </Button>
             </Link>
+          </Flex>
+        </ListItem>
+        <ListItem>
+          <Flex>
+            <Text>Documentation</Text>
+            {uploads[info.latestVersion] && uploads[info.latestVersion].docs ? (
+              <Link to={uploads[info.latestVersion].docs as string} target="_blank" rel="noopener noreferrer">
+                <Button icon={IconExternalLink} variant="light" tooltip="See the documentation for this version">
+                  Visit
+                </Button>
+              </Link>
+            ) : (
+              <Text>-</Text>
+            )}
           </Flex>
         </ListItem>
         <ListItem>
@@ -330,7 +358,7 @@ const LoadingStageCard = () => (
 
 const EmptyStageCard = ({ stageName }: { stageName: string }) => (
   <Card className="h-full">
-    <Flex flexDirection="col" className="space-y-8" alignItems="start">
+    <Flex flexDirection="col" className="space-y-12" alignItems="start">
       <Metric>{titlecase(stageName)}</Metric>
       <Flex className="space-x-2" justifyContent="center">
         <Icon icon={IconRocketOff} size="xl" className="text-tremor-content-subtle" />
