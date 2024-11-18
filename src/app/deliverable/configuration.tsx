@@ -1,5 +1,4 @@
 import { Text as CMText, Extension } from "@codemirror/state"
-import { CouchdbDoc, URL_SEPARATOR } from "@iotinga/ts-backpack-couchdb-client"
 import {
   IconAlertTriangle,
   IconCloudDownload,
@@ -71,8 +70,7 @@ export type ConfigurationEditorProps = {
   stages: string[]
 }
 export default function ConfigurationEditor({ customer, project, deliverable, stages }: ConfigurationEditorProps) {
-  const { CouchdbClient, CliAPIClient } = useContext(AppContext)
-  const { username, userDb } = useContext(AuthContext)
+  const { username } = useContext(AuthContext)
   const designDoc = username as string
 
   const { isDarkMode } = useDarkMode()
@@ -109,60 +107,58 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
     }
   })
 
-  useEffect(() => {
-    if (!userDb || !selectedStage) {
-      return
-    }
+  // useEffect(() => {
+  //   if (!userDb || !selectedStage) {
+  //     return
+  //   }
 
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .view<(string | undefined)[], ConfigurationDoc>("configurations-latest", {
-        reduce: true,
-        key: [customer, project, deliverable, selectedStage],
-      })
-      .then(resp => {
-        if (resp.rows.length === 0) {
-          throw Error
-        }
+  //   CouchdbClient.db(userDb)
+  //     .design(designDoc)
+  //     .view<(string | undefined)[], ConfigurationDoc>("configurations-latest", {
+  //       reduce: true,
+  //       key: [customer, project, deliverable, selectedStage],
+  //     })
+  //     .then(resp => {
+  //       if (resp.rows.length === 0) {
+  //         throw Error
+  //       }
 
-        const value = resp.rows[0].value as Pick<CouchdbDoc, "_id">
-        if (!value._id) {
-          throw Error
-        }
+  //       const value = resp.rows[0].value as Pick<CouchdbDoc, "_id">
+  //       if (!value._id) {
+  //         throw Error
+  //       }
 
-        return CouchdbClient.db(userDb).get<ConfigurationDoc>(value._id, {
-          // attachments: true,
-          att_encoding_info: true,
-        })
-      })
-      .then(resp => {
-        setConfigDoc(resp)
-      })
-      .catch(_ => setConfigDoc(null))
-  }, [CouchdbClient, customer, deliverable, designDoc, project, selectedStage, userDb])
+  //       return CouchdbClient.db(userDb).get<ConfigurationDoc>(value._id, {
+  //         // attachments: true,
+  //         att_encoding_info: true,
+  //       })
+  //     })
+  //     .then(resp => {
+  //       setConfigDoc(resp)
+  //     })
+  //     .catch(_ => setConfigDoc(null))
+  // }, [CouchdbClient, customer, deliverable, designDoc, project, selectedStage, userDb])
 
   const downloadAttachment = useCallback(
     (filename: string) => {
-      if (!configDoc) {
-        return Promise.reject()
-      }
-
-      // HACK: remove this when the couchdb client supports attachments
-      const path = [
-        `${Configuration.couchdb.protocol}://${Configuration.couchdb.host}:${Configuration.couchdb.port}`,
-        userDb,
-        encodeURIComponent(configDoc._id ?? ""),
-        filename,
-      ].join(URL_SEPARATOR)
-
-      return axios
-        .get(path, {
-          responseType: "blob",
-          withCredentials: true,
-        })
-        .then(resp => resp.data as Blob)
+      // if (!configDoc) {
+      //   return Promise.reject()
+      // }
+      // // HACK: remove this when the couchdb client supports attachments
+      // const path = [
+      //   `${Configuration.couchdb.protocol}://${Configuration.couchdb.host}:${Configuration.couchdb.port}`,
+      //   userDb,
+      //   encodeURIComponent(configDoc._id ?? ""),
+      //   filename,
+      // ].join(URL_SEPARATOR)
+      // return axios
+      //   .get(path, {
+      //     responseType: "blob",
+      //     withCredentials: true,
+      //   })
+      //   .then(resp => resp.data as Blob)
     },
-    [configDoc, userDb]
+    [configDoc]
   )
 
   useEffect(() => {
@@ -172,51 +168,49 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
 
     const filename = attachment[0]
 
-    downloadAttachment(filename)
-      .then(data => {
-        if (!data) {
-          return
-        }
+    // downloadAttachment(filename)
+    //   .then(data => {
+    //     if (!data) {
+    //       return
+    //     }
 
-        return data.text()
-      })
-      .then(textData => {
-        if (!textData) {
-          return
-        }
+    //     return data.text()
+    //   })
+    //   .then(textData => {
+    //     if (!textData) {
+    //       return
+    //     }
 
-        setExtensions(old => old.concat(getCodeMirrorMode(filename) ?? []))
+    //     setExtensions(old => old.concat(getCodeMirrorMode(filename) ?? []))
 
-        const text = CMText.of(textData.split("\n"))
-        setBaseText(text)
-        setCurrentText(text)
-      })
-      .catch(_ => {})
-  }, [attachment, configString, downloadAttachment, userDb])
+    //     const text = CMText.of(textData.split("\n"))
+    //     setBaseText(text)
+    //     setCurrentText(text)
+    //   })
+    //   .catch(_ => {})
+  }, [attachment, configString, downloadAttachment])
 
   const handleSave = async (event: MouseEvent<HTMLButtonElement>) => {
-    if (!userDb || !configDoc?.configuration || !selectedStage) {
-      return
-    }
-
-    setIsSaving(true)
-
-    const blob = new Blob([currentText.toString()])
-    CliAPIClient.uploadConfiguration(
-      [project, customer].join("@"),
-      deliverable,
-      selectedStage,
-      configDoc.configuration || "config.yaml",
-      attachment ? attachment[0] : "config.yaml",
-      blob
-    ).then(
-      resp => {
-        setIsSaving(false)
-      },
-      err => {
-        setIsSaving(false)
-      }
-    )
+    // if (!userDb || !configDoc?.configuration || !selectedStage) {
+    //   return
+    // }
+    // setIsSaving(true)
+    // const blob = new Blob([currentText.toString()])
+    // CliAPIClient.uploadConfiguration(
+    //   [project, customer].join("@"),
+    //   deliverable,
+    //   selectedStage,
+    //   configDoc.configuration || "config.yaml",
+    //   attachment ? attachment[0] : "config.yaml",
+    //   blob
+    // ).then(
+    //   resp => {
+    //     setIsSaving(false)
+    //   },
+    //   err => {
+    //     setIsSaving(false)
+    //   }
+    // )
   }
 
   const { isShowing, toggle: toggleModal } = useModal()
@@ -236,21 +230,21 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
 
     setIsSaving(true)
 
-    CliAPIClient.uploadConfiguration(
-      [project, customer].join("@"),
-      deliverable,
-      selectedStage,
-      file.type === SUPPORTED_MIMETYPES.zip ? CONFIGURATION_FILENAME : file.name,
-      file.name,
-      file
-    ).then(
-      resp => {
-        setIsSaving(false)
-      },
-      err => {
-        setIsSaving(false)
-      }
-    )
+    // CliAPIClient.uploadConfiguration(
+    //   [project, customer].join("@"),
+    //   deliverable,
+    //   selectedStage,
+    //   file.type === SUPPORTED_MIMETYPES.zip ? CONFIGURATION_FILENAME : file.name,
+    //   file.name,
+    //   file
+    // ).then(
+    //   resp => {
+    //     setIsSaving(false)
+    //   },
+    //   err => {
+    //     setIsSaving(false)
+    //   }
+    // )
   }
 
   return (
@@ -291,14 +285,14 @@ export default function ConfigurationEditor({ customer, project, deliverable, st
                   }
 
                   const filename = Object.keys(configDoc._attachments)[0]
-                  downloadAttachment(filename).then(data => {
-                    const a = document.createElement("a")
-                    const url = window.URL.createObjectURL(data)
-                    a.href = url
-                    a.download = filename
-                    a.click()
-                    window.URL.revokeObjectURL(url)
-                  })
+                  // downloadAttachment(filename).then(data => {
+                  //   const a = document.createElement("a")
+                  //   const url = window.URL.createObjectURL(data)
+                  //   a.href = url
+                  //   a.download = filename
+                  //   a.click()
+                  //   window.URL.revokeObjectURL(url)
+                  // })
                 }}
               >
                 Download

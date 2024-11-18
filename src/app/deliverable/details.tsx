@@ -51,55 +51,53 @@ type DeliverableVersionInfo = Record<
 function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
   const { customer, project, deliverable } = useParams()
 
-  const { CouchdbClient, CliAPIClient } = useContext(AppContext)
-  const { username, userDb } = useContext(AuthContext)
+  const { username } = useContext(AuthContext)
   const designDoc = username as string
 
   const [uploads, setUploads] = useState<DeliverableVersionInfo>({})
 
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
+  // useEffect(() => {
+  //   if (!userDb) {
+  //     return
+  //   }
 
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .viewQueries<(string | undefined)[], DeliverableDoc>("deliverables", {
-        queries: Object.values(stages).map(stageInfo => ({
-          reduce: false,
-          include_docs: true,
-          start_key: [customer, project, deliverable, stageInfo.latestVersion],
-          end_key: [customer, project, deliverable, stageInfo.latestVersion],
-        })),
-      })
-      .then(resp => {
-        const map: DeliverableVersionInfo = {}
-        resp.results
-          .flatMap(res => (res.rows[0].doc ? [res.rows[0].doc] : []))
-          .forEach(
-            doc =>
-              doc.uploads &&
-              (map[doc.version] = {
-                zip: Object.values(doc.uploads)[0],
-                docs: doc.docs,
-              })
-          )
+  //   CouchdbClient.db(userDb)
+  //     .design(designDoc)
+  //     .viewQueries<(string | undefined)[], DeliverableDoc>("deliverables", {
+  //       queries: Object.values(stages).map(stageInfo => ({
+  //         reduce: false,
+  //         include_docs: true,
+  //         start_key: [customer, project, deliverable, stageInfo.latestVersion],
+  //         end_key: [customer, project, deliverable, stageInfo.latestVersion],
+  //       })),
+  //     })
+  //     .then(resp => {
+  //       const map: DeliverableVersionInfo = {}
+  //       resp.results
+  //         .flatMap(res => (res.rows[0].doc ? [res.rows[0].doc] : []))
+  //         .forEach(
+  //           doc =>
+  //             doc.uploads &&
+  //             (map[doc.version] = {
+  //               zip: Object.values(doc.uploads)[0],
+  //               docs: doc.docs,
+  //             })
+  //         )
 
-        setUploads(map)
-      })
-  }, [CouchdbClient, customer, userDb, deliverable, designDoc, project, stages])
+  //       setUploads(map)
+  //     })
+  // }, [CouchdbClient, customer, userDb, deliverable, designDoc, project, stages])
 
   const stagesEntries = useMemo(() => Object.entries(stages), [stages])
 
   const publishAction = useCallback(
     (stage: string, version: string) => {
-      if (!deliverable) {
-        return
-      }
-
-      CliAPIClient.publish([project, customer].join("@"), deliverable, stage, version)
+      // if (!deliverable) {
+      //   return
+      // }
+      // CliAPIClient.publish([project, customer].join("@"), deliverable, stage, version)
     },
-    [CliAPIClient, customer, deliverable, project]
+    [customer, deliverable, project]
   )
 
   return (

@@ -33,7 +33,8 @@ function Page() {
       signIn(username, password).then(signedIn => {
         setHasError(!signedIn)
         if (signedIn) {
-          navigate(state ? state.from : "/")
+          // navigate(state ? state.from : "/")
+          navigate("/")
         }
       })
     }
@@ -44,6 +45,7 @@ function Page() {
       <Link to="https://iotinga.com">
         <IotingaLogo className="m-4 fixed" width={48} height={48} />
       </Link>
+
       <Container className="h-full">
         <Flex className="h-full" flexDirection="col" alignItems="center" justifyContent="center">
           <Card className="w-1/3 p-10">

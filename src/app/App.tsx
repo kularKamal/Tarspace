@@ -1,66 +1,52 @@
 import { Logger } from "@iotinga/ts-backpack-common"
 import { Card, Flex, Grid, List, ListItem, Text, Title } from "@tremor/react"
-import { useCallback, useContext, useEffect, useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { useContext } from "react"
+import { Link, useNavigate } from "react-router-dom"
 
-import { AppContext, AuthContext } from "contexts"
+import axios from "axios"
+import { AuthContext } from "contexts"
+import useSWR from "swr"
+import { CustomersApiResponse } from "types/api"
 
 const logger = new Logger("App")
 
 function App() {
-  const { CouchdbClient } = useContext(AppContext)
-  const { username, userDb } = useContext(AuthContext)
+  logger.info(" render page ")
+  const {
+    data: customers,
+    isLoading,
+    error,
+  } = useSWR("a", async () => {
+    logger.info(" fetch data ")
+    const response = await axios.get<CustomersApiResponse>("http://localhost:8000/space/api/v1/customers", {
+      withCredentials: true,
+    })
+    logger.info(" response ", response)
+    return response.data
+  })
 
-  const designDoc = username as string
-  // if (userCtx !== undefined && userCtx.roles.includes("_admin")) {
-  //   dbName = "companylog-ia6ch3s4"
-  //   designDoc = "companylog"
-  // }
-
-  const { project, customer } = useParams()
-
-  const [projects, setProjects] = useState<string[][]>([])
-  const [customers, setCustomers] = useState<string[]>([])
-
-  const [notFound, setNotFound] = useState(false)
   const navigate = useNavigate()
 
-  if (notFound) {
-    navigate("/not-found")
+  if (isLoading) {
+    return null // TODO: show loading indication
   }
 
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
-
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .view("events-build", {
-        group_level: 2,
-        reduce: true,
-      })
-      .then(resp => {
-        const projects = resp.rows.map(row => row.key as string[])
-        const customers = Array.from(new Set(projects.map(key => key[0])))
-        setProjects(projects)
-        setCustomers(customers)
-      })
-  }, [userDb, CouchdbClient, designDoc, project, customer])
-
-  const numProjects = useCallback((customer: string) => projects.filter(key => key[0] === customer).length, [projects])
+  if (customers === undefined) {
+    //navigate("/not-found")
+    return null
+  }
 
   return (
     <Grid numItemsMd={3} className="gap-6">
       {customers.map(customer => (
-        <Link to={`/deliverables/${customer}`} key={customer}>
+        <Link to={`/deliverables/${customer.name}`} key={customer.id}>
           <Card className="w-full hover:ring transition transition-all">
-            <Title>{customer}</Title>
+            <Title>{customer.name}</Title>
             <List className="mt-4">
               <ListItem>
                 <Flex>
                   <Text>Projects</Text>
-                  <Text>{numProjects(customer)}</Text>
+                  <Text>{customer.number_of_projects}</Text>
                 </Flex>
               </ListItem>
             </List>

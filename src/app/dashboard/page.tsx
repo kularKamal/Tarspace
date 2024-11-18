@@ -28,8 +28,7 @@ const textClass: Record<EventState, string> = {
 }
 
 export default function Page() {
-  const { CouchdbClient } = useContext(AppContext)
-  const { username, userDb } = useContext(AuthContext)
+  const { username } = useContext(AuthContext)
 
   const designDoc = username as string
 
@@ -39,130 +38,6 @@ export default function Page() {
   const [lastBuildState, setLastBuildState] = useState<LastBuildState | null>(null)
 
   useHtmlClass(["scrollbar-hidden", "dark"])
-
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
-
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      // FIXME: query only latest deliverable/specific version?
-      .view<string[], DeliverableDoc>("deliverables", {
-        reduce: true,
-        group_level: 3,
-      })
-      .then(resp => {
-        setDeliverablesKeys(resp.rows.map(row => row.key))
-      })
-  }, [CouchdbClient, designDoc, userDb])
-
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
-
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .viewQueries<string[], DeliverableDoc>("deliverables", {
-        queries: deliverablesKeys.map(key => ({
-          reduce: false,
-          include_docs: true,
-          limit: 1,
-          start_key: [...key, "\uffff"],
-          end_key: key,
-          descending: true,
-        })),
-      })
-      .then(resp => {
-        setDeliverableDocs(resp.results.flatMap(res => res.rows).flatMap(row => row.doc || []))
-      })
-  }, [CouchdbClient, deliverablesKeys, designDoc, userDb])
-
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
-
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .viewQueries<string[], EventDoc>("latest-published-version", {
-        queries: deliverablesKeys.map(key => ({
-          reduce: false,
-          include_docs: true,
-          limit: 1,
-          start_key: [...key, "\uffff"],
-          end_key: key,
-          descending: true,
-        })),
-      })
-      .then(resp => {
-        const map: Record<string, StageInfoMap> = {}
-
-        resp.results
-          .flatMap(res => res.rows)
-          .forEach(row => {
-            const stageName = row.key.pop()
-            const deliverableName = row.key.pop() as string
-
-            deliverableName in map || (map[deliverableName] = {})
-            if (isStageName(stageName) && row.doc) {
-              map[deliverableName][stageName] = {
-                latestVersion: row.value as string,
-                timestamp: row.doc.timestamp,
-                configurationId: row.doc.config_id as string,
-                repository: row.doc.repository,
-              }
-            }
-          })
-        setLastPublishedVersions(map)
-      })
-  }, [CouchdbClient, deliverablesKeys, designDoc, userDb])
-
-  const artifactQueries = useMemo<string[][]>(
-    () => deliverableDocs.flatMap(doc => doc.artifacts.map(a => [...doc.project.split("@").reverse(), a])),
-    [deliverableDocs]
-  )
-
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
-
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .viewQueries<string[], EventDoc>("events-build", {
-        queries: artifactQueries.map(a => ({
-          reduce: false,
-          include_docs: true,
-          descending: true,
-          limit: 1,
-          start_key: [...a, "\uffff"],
-          end_key: a,
-        })),
-      })
-      .then(resp => {
-        const map: LastBuildState = {}
-
-        resp.results
-          .map(res => res.rows[0])
-          .flatMap(row => row || [])
-          .forEach(row => {
-            const doc = row.doc
-            if (!doc) {
-              return
-            }
-
-            if (!(doc.project in map)) {
-              map[doc.project] = {}
-            }
-
-            map[doc.project][doc.target] = [doc.event as EventState, doc.timestamp]
-          })
-
-        setLastBuildState(map)
-      })
-  }, [CouchdbClient, artifactQueries, designDoc, userDb])
 
   const getDeliverableBuildState = useCallback(
     (deliverable: DeliverableDoc): EventState => {

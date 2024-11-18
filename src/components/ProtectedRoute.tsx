@@ -1,6 +1,6 @@
-import { CouchdbUserCtx } from "@iotinga/ts-backpack-couchdb-client"
 import { ReactElement, useContext, useEffect, useReducer, useState } from "react"
 import { Navigate, Outlet, useLocation } from "react-router-dom"
+import { UserSession } from "types/api"
 
 import { Loading } from "components"
 import { AuthContext } from "contexts"
@@ -14,15 +14,13 @@ export function ProtectedRoute(props: ProtectedRouteProps) {
   const { getSessionInfo } = useContext(AuthContext)
   const location = useLocation()
 
-  const [userCtx, setUserCtx] = useState<CouchdbUserCtx>()
+  const [userCtx, setUserCtx] = useState<UserSession>()
   const [loaded, toggleLoaded] = useReducer(_ => true, false)
 
   useEffect(() => {
     getSessionInfo()
       .then(resp => {
-        if (resp.userCtx?.name) {
-          setUserCtx(resp.userCtx)
-        }
+        setUserCtx(resp)
       })
       .finally(() => toggleLoaded())
   }, [getSessionInfo])

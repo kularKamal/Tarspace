@@ -1,4 +1,3 @@
-import { CouchdbDoc } from "@iotinga/ts-backpack-couchdb-client"
 import { IconAdjustments, IconFileDescription, IconHistory, IconVersions } from "@tabler/icons-react"
 import {
   Accordion,
@@ -67,8 +66,7 @@ function Page() {
   const { customer, project, deliverable, tab } = useParams()
   const navigate = useNavigate()
 
-  const { CouchdbClient } = useContext(AppContext)
-  const { username, userDb } = useContext(AuthContext)
+  const { username } = useContext(AuthContext)
   const designDoc = username as string
 
   const [lastPublishedVersions, setLastPublishedVersions] = useState<StageInfoMap>({})
@@ -85,79 +83,79 @@ function Page() {
 
   useEffect(() => setSelectedTab((tab as Tabs) ?? Tabs.DETAILS), [tab, setSelectedTab])
 
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
+  // useEffect(() => {
+  //   if (!userDb) {
+  //     return
+  //   }
 
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
-        reduce: true,
-        group: true,
-        start_key: [customer, project, deliverable],
-        end_key: [customer, project, deliverable, "\uffff"],
-      })
-      .then(resp => {
-        const groupedEvents: VersionEvents = {}
-        const eventsList: EventGroup[] = []
-        resp.rows.forEach(row => {
-          const partialId = row.key.pop()
-          if (partialId === undefined) {
-            return
-          }
-          const value = row.value as EventGroup
-          eventsList.push(value)
-          value.partialId = partialId
-          groupedEvents[value.version] ??= []
-          groupedEvents[value.version].push(value)
-        })
-        setEvents(groupedEvents)
-        setEventsList(eventsList)
+  //   CouchdbClient.db(userDb)
+  //     .design(designDoc)
+  //     .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
+  //       reduce: true,
+  //       group: true,
+  //       start_key: [customer, project, deliverable],
+  //       end_key: [customer, project, deliverable, "\uffff"],
+  //     })
+  //     .then(resp => {
+  //       const groupedEvents: VersionEvents = {}
+  //       const eventsList: EventGroup[] = []
+  //       resp.rows.forEach(row => {
+  //         const partialId = row.key.pop()
+  //         if (partialId === undefined) {
+  //           return
+  //         }
+  //         const value = row.value as EventGroup
+  //         eventsList.push(value)
+  //         value.partialId = partialId
+  //         groupedEvents[value.version] ??= []
+  //         groupedEvents[value.version].push(value)
+  //       })
+  //       setEvents(groupedEvents)
+  //       setEventsList(eventsList)
 
-        if (eventsList.length === 0) {
-          setNotFound(true)
-        }
-      })
-  }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
+  //       if (eventsList.length === 0) {
+  //         setNotFound(true)
+  //       }
+  //     })
+  // }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
 
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
+  // useEffect(() => {
+  //   if (!userDb) {
+  //     return
+  //   }
 
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .viewQueries<(string | undefined)[], EventDoc>("latest-published-version", {
-        queries: Object.values(STAGE_NAMES).map(stageName => ({
-          reduce: false,
-          include_docs: true,
-          start_key: [customer, project, deliverable, stageName],
-          end_key: [customer, project, deliverable, stageName],
-        })),
-      })
-      .then(resp => {
-        const map: StageInfoMap = {}
-        resp.results
-          .map(res => ({
-            ...res,
-            rows: [...res.rows.sort((a, b) => semverCompare(a.doc?.version as string, b.doc?.version as string))],
-          }))
-          .flatMap(res => res.rows)
-          .forEach(row => {
-            const stageName = row.key.pop()
-            if (isStageName(stageName) && row.doc) {
-              map[stageName] = {
-                latestVersion: row.value as string,
-                timestamp: row.doc.timestamp,
-                configurationId: row.doc.config_id as string,
-                repository: row.doc.repository,
-              }
-            }
-          })
-        setLastPublishedVersions(map)
-      })
-  }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
+  //   CouchdbClient.db(userDb)
+  //     .design(designDoc)
+  //     .viewQueries<(string | undefined)[], EventDoc>("latest-published-version", {
+  //       queries: Object.values(STAGE_NAMES).map(stageName => ({
+  //         reduce: false,
+  //         include_docs: true,
+  //         start_key: [customer, project, deliverable, stageName],
+  //         end_key: [customer, project, deliverable, stageName],
+  //       })),
+  //     })
+  //     .then(resp => {
+  //       const map: StageInfoMap = {}
+  //       resp.results
+  //         .map(res => ({
+  //           ...res,
+  //           rows: [...res.rows.sort((a, b) => semverCompare(a.doc?.version as string, b.doc?.version as string))],
+  //         }))
+  //         .flatMap(res => res.rows)
+  //         .forEach(row => {
+  //           const stageName = row.key.pop()
+  //           if (isStageName(stageName) && row.doc) {
+  //             map[stageName] = {
+  //               latestVersion: row.value as string,
+  //               timestamp: row.doc.timestamp,
+  //               configurationId: row.doc.config_id as string,
+  //               repository: row.doc.repository,
+  //             }
+  //           }
+  //         })
+  //       setLastPublishedVersions(map)
+  //     })
+  // }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
 
   const trackerEvents = useMemo(() => eventsList.filter(eg => eg.type === "build"), [eventsList])
 

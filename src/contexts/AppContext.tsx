@@ -2,18 +2,9 @@ import { useHtmlClass } from "hooks"
 import React, { createContext } from "react"
 import { useDarkMode } from "usehooks-ts"
 
-import { CliAPI } from "clients/CliAPI"
-import { CouchdbClient } from "clients/Couchdb"
+type AppContextType = {}
 
-type AppContextType = {
-  CliAPIClient: CliAPI
-  CouchdbClient: CouchdbClient
-}
-
-const value: AppContextType = {
-  CliAPIClient: new CliAPI(),
-  CouchdbClient: new CouchdbClient(),
-}
+const value: AppContextType = {}
 
 export const AppContext = createContext<AppContextType>(value)
 

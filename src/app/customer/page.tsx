@@ -5,10 +5,10 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { PageHeading } from "components"
 import { ClickableCard } from "components/ClickableCard"
 import { AppContext, AuthContext } from "contexts"
+import useSWR from "swr"
 
 function Page() {
-  const { CouchdbClient } = useContext(AppContext)
-  const { username, userDb } = useContext(AuthContext)
+  const { username } = useContext(AuthContext)
 
   const designDoc = username as string
   // if (userCtx !== undefined && userCtx.roles.includes("_admin")) {
@@ -26,36 +26,6 @@ function Page() {
   if (notFound) {
     navigate("/not-found")
   }
-
-  useEffect(() => {
-    if (!userDb) {
-      return
-    }
-
-    CouchdbClient.db(userDb)
-      .design(designDoc)
-      .view("deliverables", {
-        group_level: 3,
-        reduce: true,
-        start_key: [customer],
-        end_key: [customer, "\uffff"],
-      })
-      .then(resp => {
-        if (resp.total_rows === 0) {
-          setNotFound(true)
-        }
-
-        const projects = resp.rows.reduce<Record<string, number>>((acc, row) => {
-          const key = (row.key as string[])[1]
-          key in acc || (acc[key] = 0)
-          acc[key]++
-
-          return acc
-        }, {})
-
-        setProjects(projects)
-      })
-  }, [userDb, CouchdbClient, designDoc, customer])
 
   return (
     <>

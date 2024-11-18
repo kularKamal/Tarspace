@@ -109,8 +109,7 @@ const SearchNoResultsView = () => (
 )
 
 export function Search() {
-  const { CouchdbClient } = useContext(AppContext)
-  const { userDb, username } = useContext(AuthContext)
+  const { username } = useContext(AuthContext)
 
   const cache = useRef<Record<string, SearcheableDeliverable> | null>(null)
   const [deliverables, setDeliverables] = useState<Record<string, SearcheableDeliverable>>({})
@@ -131,32 +130,30 @@ export function Search() {
   })
 
   async function fetchDeliverables() {
-    if (userDb === undefined || username === undefined) {
-      return
-    }
-
-    if (cache.current) {
-      setDeliverables(cache.current)
-      return
-    }
-
-    await CouchdbClient.db(userDb)
-      .design(username)
-      .view("deliverables-search", {
-        reduce: true,
-        group: true,
-      })
-      .then(resp => {
-        const map: Record<string, SearcheableDeliverable> = {}
-        resp.rows.forEach(row => {
-          const value = row.value as SearcheableDeliverable
-          const path = value.slug
-          map[path] = value
-        })
-        setDeliverables(map)
-        cache.current = map
-        setLoading(false)
-      })
+    // if (userDb === undefined || username === undefined) {
+    //   return
+    // }
+    // if (cache.current) {
+    //   setDeliverables(cache.current)
+    //   return
+    // }
+    // await CouchdbClient.db(userDb)
+    //   .design(username)
+    //   .view("deliverables-search", {
+    //     reduce: true,
+    //     group: true,
+    //   })
+    //   .then(resp => {
+    //     const map: Record<string, SearcheableDeliverable> = {}
+    //     resp.rows.forEach(row => {
+    //       const value = row.value as SearcheableDeliverable
+    //       const path = value.slug
+    //       map[path] = value
+    //     })
+    //     setDeliverables(map)
+    //     cache.current = map
+    //     setLoading(false)
+    //   })
   }
 
   function handleQueryChange(event: ChangeEvent<HTMLInputElement>) {
