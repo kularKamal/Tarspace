@@ -49,6 +49,6 @@ export function isTimedOut(eventGroup: EventGroup) {
   )
 }
 
-export function isInProgress(eventGroup: EventGroup) {
+export function isPending(eventGroup: EventGroup) {
   return !eventGroup.success && !eventGroup.failure
 }

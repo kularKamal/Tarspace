@@ -65,7 +65,7 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
   async function signIn(username: string, password: string): Promise<boolean> {
     // Creo variabile response che prende valore della risposta alla chiamata della funzione API
     try {
-      const response = await axios.post("http://127.0.0.1:8000/space/api/v1/auth/login/", {
+      const response = await axios.post("http://localhost:8000/space/api/v1/auth/login/", {
         username: username,
         password: password,
       })

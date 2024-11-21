@@ -2,10 +2,15 @@ import { IconCalendar, IconClock, IconCubeSend, IconTool, Icon as TablerIcon } f
 import { Flex, Icon, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow, Text } from "@tremor/react"
 import { DateTime } from "luxon"
 import { memo, useMemo } from "react"
+import { Link, useParams } from "react-router-dom"
 
-import { getBadge } from "components"
+import { getBadge, Skeleton } from "components"
 import { EventGroup, EventOperation } from "types"
 import { formatTimestamp, sortEventGroupsByTime, titlecase } from "utils"
+import { DeliverableInformations } from "types/api"
+import useSWR, { mutate } from "swr"
+import { Logger } from "@iotinga/ts-backpack-common"
+import axios from "axios"
 
 export const OPERATION_ICONS: Record<EventOperation, TablerIcon> = {
   build: IconTool,
@@ -17,6 +22,32 @@ export type EventsViewProps = {
 }
 function EventsView(props: EventsViewProps) {
   const sorted = useMemo(() => props.events.sort(sortEventGroupsByTime), [props.events])
+
+  const { customer, project, deliverable } = useParams()
+  // Fetch project information
+  const {
+    data: deliverableInfo,
+    isLoading,
+    error,
+  } = useSWR("a", async () => {
+    const response = await axios.get<DeliverableInformations>(
+      `http://localhost:8000/space/api/v1/customers/${customer}/projects/${project}/deliverables/${deliverable}`,
+      { withCredentials: true }
+    )
+    return response.data
+  })
+
+  if (isLoading) {
+    return <div>Loading customers...</div> // Indication during loading
+  }
+
+  if (error) {
+    return <div>Error fetching customers: {error.message}</div> // Display an error if the API fails
+  }
+
+  if (!deliverableInfo) {
+    return <Skeleton className="h-screen w-full" />
+  }
 
   return (
     <Table className="table-fixed">

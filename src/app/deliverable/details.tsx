@@ -34,6 +34,10 @@ import { AppContext, AuthContext } from "contexts"
 import { useModal } from "hooks"
 import { DeliverableDoc, EventGroup, STAGES_ORDER, STAGE_NAMES, StageInfo, StageInfoMap, StageName } from "types"
 import { formatTimestamp, semverCompare, titlecase } from "utils"
+import { DeliverableInformations } from "types/api"
+import useSWR, { mutate } from "swr"
+import { Logger } from "@iotinga/ts-backpack-common"
+import axios from "axios"
 
 export type DetailsViewProps = {
   stages: StageInfoMap
@@ -52,68 +56,59 @@ function DetailsView({ stages, trackerEvents }: DetailsViewProps) {
   const { customer, project, deliverable } = useParams()
 
   const { username } = useContext(AuthContext)
-  const designDoc = username as string
 
   const [uploads, setUploads] = useState<DeliverableVersionInfo>({})
 
-  // useEffect(() => {
-  //   if (!userDb) {
-  //     return
-  //   }
-
-  //   CouchdbClient.db(userDb)
-  //     .design(designDoc)
-  //     .viewQueries<(string | undefined)[], DeliverableDoc>("deliverables", {
-  //       queries: Object.values(stages).map(stageInfo => ({
-  //         reduce: false,
-  //         include_docs: true,
-  //         start_key: [customer, project, deliverable, stageInfo.latestVersion],
-  //         end_key: [customer, project, deliverable, stageInfo.latestVersion],
-  //       })),
-  //     })
-  //     .then(resp => {
-  //       const map: DeliverableVersionInfo = {}
-  //       resp.results
-  //         .flatMap(res => (res.rows[0].doc ? [res.rows[0].doc] : []))
-  //         .forEach(
-  //           doc =>
-  //             doc.uploads &&
-  //             (map[doc.version] = {
-  //               zip: Object.values(doc.uploads)[0],
-  //               docs: doc.docs,
-  //             })
-  //         )
-
-  //       setUploads(map)
-  //     })
-  // }, [CouchdbClient, customer, userDb, deliverable, designDoc, project, stages])
-
   const stagesEntries = useMemo(() => Object.entries(stages), [stages])
 
-  const publishAction = useCallback(
-    (stage: string, version: string) => {
-      // if (!deliverable) {
-      //   return
-      // }
-      // CliAPIClient.publish([project, customer].join("@"), deliverable, stage, version)
-    },
-    [customer, deliverable, project]
-  )
+  const publishAction = useCallback((stage: string, version: string) => {}, [customer, deliverable, project])
+
+  // Fetch project information
+  const {
+    data: deliverableInfo,
+    isLoading,
+    error,
+  } = useSWR("deliverable", async () => {
+    const response = await axios.get<DeliverableInformations>(
+      `http://localhost:8000/space/api/v1/customers/${customer}/projects/${project}/deliverables/${deliverable}`,
+      { withCredentials: true }
+    )
+    return response.data
+  })
+
+  if (isLoading) {
+    return <div>Loading customers...</div> // Indication during loading
+  }
+
+  if (error) {
+    return <div>Error fetching customers: {error.message}</div> // Display an error if the API fails
+  }
+
+  if (!deliverableInfo) {
+    return <Skeleton className="h-screen w-full" />
+  }
+
+  const latestBuild = deliverableInfo.latest_build_events
+  const Stages = deliverableInfo.stages
 
   return (
     <>
       <Grid numItemsMd={1} numItemsLg={3} className="gap-6 mt-6">
-        {stagesEntries.length === 0 ? (
+        {Object.keys(Stages).length === 0 ? (
           <>
             <LoadingStageCard />
             <LoadingStageCard />
             <LoadingStageCard />
           </>
         ) : (
-          Object.values(STAGE_NAMES)
-            .sort((a, b) => STAGES_ORDER.indexOf(a) - STAGES_ORDER.indexOf(b))
-            .map(stageName => (
-              <StageCard uploads={uploads} info={stages[stageName]} key={stageName} stageName={stageName} />
+          Object.entries(Stages) // Itera attraverso le coppie [nome dello stage, dati]
+            .map(([stageName, stageInfo]) => (
+              <StageCard
+                key={stageName}
+                stageName={stageName}
+                info={stageInfo} // Passa i dati di ogni stage
+                uploads={uploads}
+              />
             ))
         )}
       </Grid>
@@ -138,16 +133,22 @@ export default DetailsView
 
 type StageCardProps = {
   uploads: DeliverableVersionInfo
-  info?: StageInfo
+  info: {
+    current_published_version: string
+    last_published_at: string
+    download_uri: string
+    current_configuration_uri: string
+  }
   stageName: string
 }
+
 const StageCard = ({ uploads, info, stageName }: StageCardProps) =>
   info ? (
     <Card>
       <Flex flexDirection="row" justifyContent="between" alignItems="baseline">
         <Metric>{titlecase(stageName)}</Metric>
-        {uploads[info.latestVersion] && (
-          <Link to={uploads[info.latestVersion].zip}>
+        {uploads[info.current_published_version] && (
+          <Link to={uploads[info.current_published_version].zip}>
             <Button icon={IconCloudDownload} variant="light" size="lg" tooltip="Download deliverable files" />
           </Link>
         )}
@@ -156,9 +157,15 @@ const StageCard = ({ uploads, info, stageName }: StageCardProps) =>
         <ListItem>
           <Flex>
             <Text>Current version</Text>
-            <Link to={info.repository ? urlJoin(info.repository, `./tree/v${info.latestVersion}`) : ""}>
+            <Link
+              to={
+                info.current_configuration_uri
+                  ? urlJoin(info.current_configuration_uri, `./tree/v${info.current_published_version}`)
+                  : ""
+              }
+            >
               <Button icon={IconBrandGithub} variant="light" tooltip="See the source code for this release">
-                {info.latestVersion}
+                {info.current_published_version}
               </Button>
             </Link>
           </Flex>
@@ -166,8 +173,12 @@ const StageCard = ({ uploads, info, stageName }: StageCardProps) =>
         <ListItem>
           <Flex>
             <Text>Documentation</Text>
-            {uploads[info.latestVersion] && uploads[info.latestVersion].docs ? (
-              <Link to={uploads[info.latestVersion].docs as string} target="_blank" rel="noopener noreferrer">
+            {uploads[info.current_published_version] && uploads[info.current_published_version].docs ? (
+              <Link
+                to={uploads[info.current_published_version].docs as string}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button icon={IconExternalLink} variant="light" tooltip="See the documentation for this version">
                   Visit
                 </Button>
@@ -180,7 +191,7 @@ const StageCard = ({ uploads, info, stageName }: StageCardProps) =>
         <ListItem>
           <Flex>
             <Text>Last update date</Text>
-            <Text>{formatTimestamp(info.timestamp, DateTime.DATETIME_MED)}</Text>
+            <Text>{formatTimestamp(info.last_published_at, DateTime.DATETIME_MED)}</Text>
           </Flex>
         </ListItem>
       </List>

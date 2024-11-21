@@ -2,22 +2,22 @@ import { Badge, BadgeProps } from "@tremor/react"
 import { RefAttributes } from "react"
 
 import { EventGroup } from "types"
-import { isInProgress, isTimedOut } from "utils"
+import { isPending, isTimedOut } from "utils"
 
-export type EventState = "success" | "failure" | "inProgress" | "timedOut"
+export type EventState = "success" | "failure" | "pending" | "timeout"
 
 export const EventStateMessages: Record<EventState, string> = {
-  inProgress: "In progress",
+  pending: "In progress",
   success: "Success",
   failure: "Failure",
-  timedOut: "Timed out",
+  timeout: "Timed out",
 }
 
 export const EventStateBadges: Record<EventState, JSX.Element> = {
   success: BadgeFactory(EventStateMessages.success, { color: "emerald", size: "xl" }),
   failure: BadgeFactory(EventStateMessages.failure, { color: "red", size: "xl" }),
-  inProgress: BadgeFactory(EventStateMessages.inProgress, { color: "yellow", size: "xl" }),
-  timedOut: BadgeFactory(EventStateMessages.timedOut, { color: "gray", size: "xl" }),
+  pending: BadgeFactory(EventStateMessages.pending, { color: "yellow", size: "xl" }),
+  timeout: BadgeFactory(EventStateMessages.timeout, { color: "gray", size: "xl" }),
 }
 
 function BadgeFactory(text: string, props: BadgeProps & RefAttributes<HTMLSpanElement>) {
@@ -25,11 +25,11 @@ function BadgeFactory(text: string, props: BadgeProps & RefAttributes<HTMLSpanEl
 }
 
 export function getBadge(eventGroup: EventGroup) {
-  if (isInProgress(eventGroup)) {
+  if (isPending(eventGroup)) {
     if (isTimedOut(eventGroup)) {
-      return EventStateBadges.timedOut
+      return EventStateBadges.timeout
     }
-    return EventStateBadges.inProgress
+    return EventStateBadges.pending
   }
   if (eventGroup.success) {
     return EventStateBadges.success

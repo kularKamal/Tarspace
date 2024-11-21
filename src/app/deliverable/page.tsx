@@ -22,10 +22,14 @@ import { useTabs } from "react-headless-tabs"
 import { useNavigate, useParams } from "react-router-dom"
 
 import { type VersionEvents } from "app/deliverable/versions"
-import { EventState, EventStateBadges, EventStateMessages, Loading, PageHeading } from "components"
+import { EventState, EventStateBadges, EventStateMessages, Loading, PageHeading, Skeleton } from "components"
 import { AppContext, AuthContext } from "contexts"
 import { EventDoc, EventGroup, STAGES_ORDER, STAGE_NAMES, SingleEvent, StageInfoMap } from "types"
-import { isInProgress, isStageName, isTimedOut, semverCompare, titlecase } from "utils"
+import { isPending, isStageName, isTimedOut, semverCompare, titlecase } from "utils"
+import { DeliverableInformations } from "types/api"
+import useSWR, { mutate } from "swr"
+import { Logger } from "@iotinga/ts-backpack-common"
+import axios from "axios"
 
 const ConfigurationEditor = lazy(() => import("app/deliverable/configuration"))
 const DetailsView = lazy(() => import("app/deliverable/details"))
@@ -63,6 +67,7 @@ function CustomTabPanel<T extends string>(props: { name: string; currentTab?: T 
 }
 
 function Page() {
+  const logger = new Logger("App")
   const { customer, project, deliverable, tab } = useParams()
   const navigate = useNavigate()
 
@@ -80,83 +85,7 @@ function Page() {
   if (notFound) {
     navigate("/not-found")
   }
-
   useEffect(() => setSelectedTab((tab as Tabs) ?? Tabs.DETAILS), [tab, setSelectedTab])
-
-  // useEffect(() => {
-  //   if (!userDb) {
-  //     return
-  //   }
-
-  //   CouchdbClient.db(userDb)
-  //     .design(designDoc)
-  //     .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
-  //       reduce: true,
-  //       group: true,
-  //       start_key: [customer, project, deliverable],
-  //       end_key: [customer, project, deliverable, "\uffff"],
-  //     })
-  //     .then(resp => {
-  //       const groupedEvents: VersionEvents = {}
-  //       const eventsList: EventGroup[] = []
-  //       resp.rows.forEach(row => {
-  //         const partialId = row.key.pop()
-  //         if (partialId === undefined) {
-  //           return
-  //         }
-  //         const value = row.value as EventGroup
-  //         eventsList.push(value)
-  //         value.partialId = partialId
-  //         groupedEvents[value.version] ??= []
-  //         groupedEvents[value.version].push(value)
-  //       })
-  //       setEvents(groupedEvents)
-  //       setEventsList(eventsList)
-
-  //       if (eventsList.length === 0) {
-  //         setNotFound(true)
-  //       }
-  //     })
-  // }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
-
-  // useEffect(() => {
-  //   if (!userDb) {
-  //     return
-  //   }
-
-  //   CouchdbClient.db(userDb)
-  //     .design(designDoc)
-  //     .viewQueries<(string | undefined)[], EventDoc>("latest-published-version", {
-  //       queries: Object.values(STAGE_NAMES).map(stageName => ({
-  //         reduce: false,
-  //         include_docs: true,
-  //         start_key: [customer, project, deliverable, stageName],
-  //         end_key: [customer, project, deliverable, stageName],
-  //       })),
-  //     })
-  //     .then(resp => {
-  //       const map: StageInfoMap = {}
-  //       resp.results
-  //         .map(res => ({
-  //           ...res,
-  //           rows: [...res.rows.sort((a, b) => semverCompare(a.doc?.version as string, b.doc?.version as string))],
-  //         }))
-  //         .flatMap(res => res.rows)
-  //         .forEach(row => {
-  //           const stageName = row.key.pop()
-  //           if (isStageName(stageName) && row.doc) {
-  //             map[stageName] = {
-  //               latestVersion: row.value as string,
-  //               timestamp: row.doc.timestamp,
-  //               configurationId: row.doc.config_id as string,
-  //               repository: row.doc.repository,
-  //             }
-  //           }
-  //         })
-  //       setLastPublishedVersions(map)
-  //     })
-  // }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
-
   const trackerEvents = useMemo(() => eventsList.filter(eg => eg.type === "build"), [eventsList])
 
   return (
@@ -225,8 +154,8 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
   })
   const [statusFilter, setStatusFilter] = useState<StatusFilter>({
     failure: true,
-    inProgress: true,
-    timedOut: true,
+    pending: true,
+    timeout: true,
     success: true,
   })
   const [opFilter, setOpFilter] = useState()
@@ -236,8 +165,8 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
     const isStatusInFilter =
       (e.success && statusFilter.success) ||
       (e.failure && statusFilter.failure) ||
-      (isTimedOut(e) && statusFilter.timedOut) ||
-      (isInProgress(e) && statusFilter.inProgress)
+      (isTimedOut(e) && statusFilter.timeout) ||
+      (isPending(e) && statusFilter.pending)
 
     return isInRange && isStatusInFilter
   })
@@ -304,3 +233,77 @@ const EventsPanel = ({ eventsList }: EventsPanelProps) => {
     </Card>
   )
 }
+
+// useEffect(() => {
+//   if (!userDb) {
+//     return
+//   }
+
+//   CouchdbClient.db(userDb)
+//     .design(designDoc)
+//     .view<(string | undefined)[], EventGroup & CouchdbDoc>("grouped-events", {
+//       reduce: true,
+//       group: true,
+//       start_key: [customer, project, deliverable],
+//       end_key: [customer, project, deliverable, "\uffff"],
+//     })
+//     .then(resp => {
+//       const groupedEvents: VersionEvents = {}
+//       const eventsList: EventGroup[] = []
+//       resp.rows.forEach(row => {
+//         const partialId = row.key.pop()
+//         if (partialId === undefined) {
+//           return
+//         }
+//         const value = row.value as EventGroup
+//         eventsList.push(value)
+//         value.partialId = partialId
+//         groupedEvents[value.version] ??= []
+//         groupedEvents[value.version].push(value)
+//       })
+//       setEvents(groupedEvents)
+//       setEventsList(eventsList)
+
+//       if (eventsList.length === 0) {
+//         setNotFound(true)
+//       }
+//     })
+// }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])
+
+// useEffect(() => {
+//   if (!userDb) {
+//     return
+//   }
+
+//   CouchdbClient.db(userDb)
+//     .design(designDoc)
+//     .viewQueries<(string | undefined)[], EventDoc>("latest-published-version", {
+//       queries: Object.values(STAGE_NAMES).map(stageName => ({
+//         reduce: false,
+//         include_docs: true,
+//         start_key: [customer, project, deliverable, stageName],
+//         end_key: [customer, project, deliverable, stageName],
+//       })),
+//     })
+//     .then(resp => {
+//       const map: StageInfoMap = {}
+//       resp.results
+//         .map(res => ({
+//           ...res,
+//           rows: [...res.rows.sort((a, b) => semverCompare(a.doc?.version as string, b.doc?.version as string))],
+//         }))
+//         .flatMap(res => res.rows)
+//         .forEach(row => {
+//           const stageName = row.key.pop()
+//           if (isStageName(stageName) && row.doc) {
+//             map[stageName] = {
+//               latestVersion: row.value as string,
+//               timestamp: row.doc.timestamp,
+//               configurationId: row.doc.config_id as string,
+//               repository: row.doc.repository,
+//             }
+//           }
+//         })
+//       setLastPublishedVersions(map)
+//     })
+// }, [CouchdbClient, customer, deliverable, designDoc, project, userDb])

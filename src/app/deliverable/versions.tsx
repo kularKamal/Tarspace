@@ -1,11 +1,16 @@
 import { IconBrandGithub } from "@tabler/icons-react"
 import { Button, Card, Col, Flex, Grid, Title } from "@tremor/react"
 import { lazy, useMemo } from "react"
-import { Link } from "react-router-dom"
 import urlJoin from "url-join"
 
 import { EventGroup } from "types"
 import { semverCompare } from "utils"
+import { DeliverableInformations } from "types/api"
+import useSWR, { mutate } from "swr"
+import { Logger } from "@iotinga/ts-backpack-common"
+import axios from "axios"
+import { Skeleton } from "components"
+import { Link, useParams } from "react-router-dom"
 
 const EventsView = lazy(() => import("app/deliverable/events"))
 
@@ -18,6 +23,32 @@ function VersionsView({ events }: VersionViewProps) {
   const sortEvents = (a: [string, EventGroup[]], b: [string, EventGroup[]]) => semverCompare(a[0], b[0])
 
   const sortedEvents = useMemo(() => Object.entries(events).sort(sortEvents).reverse(), [events])
+  const { customer, project, deliverable } = useParams()
+
+  // Fetch project information
+  const {
+    data: deliverableInfo,
+    isLoading,
+    error,
+  } = useSWR("a", async () => {
+    const response = await axios.get<DeliverableInformations>(
+      `http://localhost:8000/space/api/v1/customers/${customer}/projects/${project}/deliverables/${deliverable}`,
+      { withCredentials: true }
+    )
+    return response.data
+  })
+
+  if (isLoading) {
+    return <div>Loading customers...</div> // Indication during loading
+  }
+
+  if (error) {
+    return <div>Error fetching customers: {error.message}</div> // Display an error if the API fails
+  }
+
+  if (!deliverableInfo) {
+    return <Skeleton className="h-screen w-full" />
+  }
 
   return (
     <>
